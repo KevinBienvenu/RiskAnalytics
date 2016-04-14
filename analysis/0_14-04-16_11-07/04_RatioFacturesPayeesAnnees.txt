@@ -1,0 +1,9 @@
+name:Ratio des factures payées par année
+xlabel:
+ylabel:Pourcentage de factures
+typeyaxis:linear
+x:2010,2011,2012,2013,2014
+y1:11.4414153132,3.82716704708,2.41470329455,6.78074132183,1.56916947843
+name1:Pourcentage de factures payées
+y2:3.34976798144,1.51812728913,1.03626943005,1.55422631889,0.678889385747
+name2:Pourcentage de factures payées à temps

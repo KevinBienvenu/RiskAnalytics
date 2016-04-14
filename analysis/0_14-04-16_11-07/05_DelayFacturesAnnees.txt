@@ -1,0 +1,9 @@
+name:Durées des délais d'échéance et de paiement
+xlabel:
+ylabel:Jours de délais
+typeyaxis:linear
+x:2010,2011,2012,2013,2014
+y1:53,50,49,50,50
+name1:Durée de l'échéance
+y2:49,38,34,51,31
+name2:Durée du temps de paiement

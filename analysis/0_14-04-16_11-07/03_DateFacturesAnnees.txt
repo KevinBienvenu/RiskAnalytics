@@ -1,0 +1,7 @@
+name:Distribution des factures par année
+xlabel:
+ylabel:Nombre de factures
+typeyaxis:linear
+x:2010,2011,2012,2013,2014
+y1:13792,18839,20458,20396,24599
+name1:

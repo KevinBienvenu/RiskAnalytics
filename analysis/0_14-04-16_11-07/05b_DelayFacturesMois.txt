@@ -1,0 +1,9 @@
+name:Durées des délais d'échéance et de paiement
+xlabel:
+ylabel:Jours de délais
+typeyaxis:linear
+x:Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec
+y1:50,50,51,51,50,50,51,49,50,50,50,51
+name1:Durée de l'échéance
+y2:52,54,53,49,34,40,35,41,36,32,32,37
+name2:Durée du temps de paiement
