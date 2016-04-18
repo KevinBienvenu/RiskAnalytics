@@ -1026,7 +1026,7 @@ def analysingComplete(csvinput, toSaveGraph = False, toDrawGraphOld = False):
     print ""
     
     # importing column
-    column = csvinput[['entrep_id','datePiece','dateEcheance','dateDernierPaiement','paidBill','montantPieceEur']]
+    column = csvinput[['entrep_id','datePiece','dateEcheance','dateDernierPaiement','paidBill','montantPieceEur','montantLitige']]
     
     if len(column) ==0 :
         print "no result to analyse"
@@ -1053,6 +1053,10 @@ def analysingComplete(csvinput, toSaveGraph = False, toDrawGraphOld = False):
     maxDelay = 0
     minDate = 0
     maxDate =0
+    # array about montantLitige
+    numberMontantLitige = 0
+    numberMontantLitigeAndDelay = 0
+    numberMontantLitigeAndNotPaid = 0
     # filling the dictionaries
     for entry in column.values:
         d = datetime.datetime.strptime(entry[1],"%Y-%m-%d").date()
@@ -1061,8 +1065,8 @@ def analysingComplete(csvinput, toSaveGraph = False, toDrawGraphOld = False):
         if maxDate==0 or d>maxDate:
             maxDate = d
         if entry[4]:
-            d1 = datetime.datetime.strptime(entry[3],"%Y-%m-%d").date()
-            delay = (d1-d).days
+            d2 = datetime.datetime.strptime(entry[3],"%Y-%m-%d").date()
+            delay = (d2-d).days
             if delay>maxDelay:
                 maxDelay = delay
             vectorDelay[min(len(vectorDelay)-1,(int)(delay/Constants.anaCompletStepSizeDelay))] += 1
@@ -1085,6 +1089,17 @@ def analysingComplete(csvinput, toSaveGraph = False, toDrawGraphOld = False):
             informationMontantArray[(int)(math.log10(entry[5]))][1] += 1
             informationMontantArray[(int)(math.log10(entry[5]))][0] += (delay if entry[4] else 0)
         informationMontantArray[(int)(math.log10(entry[5]))][2] += 1
+        try:
+            if int(entry[6])>0:
+                numberMontantLitige += 1
+                if entry[4]:
+                    d1 = datetime.datetime.strptime(entry[2],"%Y-%m-%d").date()
+                    if d2>d1:
+                        numberMontantLitigeAndDelay += 1
+                else:
+                    numberMontantLitigeAndNotPaid += 1
+        except:
+            continue
     # computing additional informations
     for entreprise in entrepriseDict.values():
         if entreprise[0]!=entreprise[1]:
@@ -1129,7 +1144,13 @@ def analysingComplete(csvinput, toSaveGraph = False, toDrawGraphOld = False):
     print ""
     print "min mean montant of enterprise :", np.min(vectorMeanMontant)
     print "max mean montant of enterprise :", np.max(vectorMeanMontant)
-    
+    print ""
+    print ""
+    print "number of non-zero montantLitige :",numberMontantLitige,"-",100.0*numberMontantLitige/len(column),"%"
+    if numberMontantLitige>0:
+        print "    percentage of non-zero montantLitige and unpaid bills :",100.0*numberMontantLitigeAndNotPaid/numberMontantLitige,"%"
+        print "    percentage of non-zero montantLitige and delay :",100.0*numberMontantLitigeAndDelay/numberMontantLitige,"%"
+    print ""
     # creating and saving graphs
     if toSaveGraph:
         # creating vectors
