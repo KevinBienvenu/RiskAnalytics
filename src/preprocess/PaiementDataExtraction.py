@@ -45,6 +45,7 @@ def importCsv(filename = 'cameliaBalAG_extraitRandom.csv',sep='\t',usecols = Non
     -- OUT
     returns the dataframe out of the csv file
     '''
+    os.chdir("../../")
     csvinput = pd.read_csv(filename,sep=sep,usecols = usecols)
     # adding a column to the dataframe with a boolean telling if the bill was paid
     if(addPaidBill):
@@ -910,6 +911,7 @@ def analysingMontant(csvinput, toSaveGraph = False, toDrawGraphOld = False):
     print "minimal bill value :", np.min(column)
     print "maximal bill value :", np.max(column)
     print "mean bill value :",np.mean(column)
+    print "median bill value :",np.median(column)
     
     # about the log-repartition of ids
     repartitionMontantArray = [0]*(int)(math.log10(max(column))*Constants.anaIdLogCoefficientMontants+1)
@@ -1308,7 +1310,7 @@ def importCleaningCsv(toPrint = False, toDrawGraph = True, ftp = False):
     -- OUT 
     returns the cleaned dataframe (dataframe)
     '''
-    print "Extractiong the BalAG dataframe"
+    print "Extracting the BalAG dataframe"
     startTime = time.time()
     # importing the csv file and creating the datframe
     if(ftp):
@@ -1321,16 +1323,16 @@ def importCleaningCsv(toPrint = False, toDrawGraph = True, ftp = False):
     csvinput = cleaningOther(csvinput, toPrint)
     csvinput = cleaningMontant(csvinput, toPrint)
     csvinput = cleaningEntrepId(csvinput, toPrint)
-    if toDrawGraph:
-        prepareInput()
+#     if toDrawGraph:
+#         prepareInput()
         # analysing the dateframe
-        analysingDates(csvinput, toDrawGraph)
-        analysingEntrepId(csvinput, toDrawGraph)
-        analysingMontant(csvinput, toDrawGraph)
-        analysingOthers(csvinput)
-        analysingComplete(csvinput, toDrawGraph)
+#         analysingDates(csvinput, toDrawGraph)
+#         analysingEntrepId(csvinput, toDrawGraph)
+    analysingMontant(csvinput, toDrawGraph)
+#         analysingOthers(csvinput)
+#         analysingComplete(csvinput, toDrawGraph)
         # ploting the graphs
-        plt.show()
+#         plt.show()
     Utils.printTime(startTime)
     print ""
     return csvinput
@@ -1354,8 +1356,6 @@ def printLastGraphs():
             DrawingTools.drawHistogramFromFile(tab[0]) 
             print "...done"
 
-    
-
 def sideAnalysis(ftp = True):
     # importing the csv file and creating the datframe
     if(ftp):
@@ -1376,3 +1376,4 @@ def sideAnalysis(ftp = True):
 
 # sideAnalysis(True)
 
+importCleaningCsv(toPrint=False, toDrawGraph=False, ftp=False)
