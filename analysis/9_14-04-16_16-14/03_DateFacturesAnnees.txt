@@ -1,0 +1,9 @@
+﻿name:Distribution des factures par année
+xlabel:
+ylabel:Nombre de factures (%)
+typeyaxis:linear
+x:2010,2011,2012,2013,2014
+y1:8683893,11835330,13045387,13011531,15400474
+name1:
+percent:True
+name:Distribution des factures par année

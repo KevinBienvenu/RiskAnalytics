@@ -1,0 +1,8 @@
+﻿name:Distribution des montants selon les années
+xlabel:
+ylabel:Valeur moyenne des montants
+typeyaxis:linear
+x:2010,2011,2012,2013,2014
+y1:321204.93672,306393.686053,290904.736685,274171.959373,284841.329079
+name1:
+name:Distribution des montants selon les années

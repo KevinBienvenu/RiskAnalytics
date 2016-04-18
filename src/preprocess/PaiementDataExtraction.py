@@ -31,36 +31,41 @@ import Constants
 
 
 ''' I - Importation of the data  '''
-def importCsv(filename = 'cameliaBalAG_extraitRandom.csv',sep='\t',usecols = None):
+def importCsv(filename = 'cameliaBalAG_extraitRandom.csv',sep='\t',usecols = None,addPaidBill = False):
     '''
     function that imports the content of the csv file into the global
     variable csvinput. The path is also changed here to match the global 
     address contained in the variable path
     -- IN
-    fileName : name of the file, including the extension (string)
-    sep : separator for the pandas read_csv function (regexp)
+    fileName : name of the file, including the extension (string) default : 'cameliaBalAG_extraitRandom.csv'
+    sep : separator for the pandas read_csv function (regexp) default : '\t'
+    usecols : array containing the names of the column we want to import, 
+        if None import all (string[] or None) default : None
+    addPaidBill : boolean that settles if we add a column PaidBill (boolean) default : False
     -- OUT
     returns the dataframe out of the csv file
     '''
     csvinput = pd.read_csv(filename,sep=sep,usecols = usecols)
     # adding a column to the dataframe with a boolean telling if the bill was paid
-    if(filename=='cameliaBalAG_extraitRandom.csv'):
+    if(addPaidBill):
         paidBill = []
         for row in csvinput['dateDernierPaiement'] :
             paidBill.append(not row == "0000-00-00")            
         csvinput['paidBill'] = pd.Series(paidBill, index=csvinput.index)
     return csvinput
 
-def importFTPCsv(filename = 'cameliaBalAG.csv.gz',sep='\t',function="ckftp",usecols = None):
+def importFTPCsv(filename = 'cameliaBalAG.csv.gz',sep='\t',function="ckftp",usecols = None,addPaidBill = False):
     '''
     function that imports the content of the csv file into the global
     variable csvinput. the file is downloaded from the remote ftp via
     one of the two functions in FTPTools according to the input
     -- IN
-    filename : name of the file, including the extension (string) default: 'cameliaBalAG.csv.gz'
-    sep : separator for the pandas read_csv function (regexp) default: '\t'
-    function : name of the importation function to be used "ckftp" or "ftplib" (string) default: "ckftp"
-    usecols : array containing the names of the column we want to import, if None import all (string[] or None) default: None
+    filename : name of the file, including the extension (string) default : 'cameliaBalAG.csv.gz'
+    sep : separator for the pandas read_csv function (regexp) default : '\t'
+    function : name of the importation function to be used "ckftp" or "ftplib" (string) default : "ckftp"
+    usecols : array containing the names of the column we want to import, 
+        if None import all (string[] or None) default : None
+    addPaidBill : boolean that settles if we add a column PaidBill (boolean) default : False
     -- OUT
     returns the dataframe out of the csv file
     '''
@@ -69,7 +74,7 @@ def importFTPCsv(filename = 'cameliaBalAG.csv.gz',sep='\t',function="ckftp",usec
     elif(function=="ftplib"):
         csvinput = FTPTools.connectFtplib(filename, usecols, Constants.dtype)
     # adding a column to the dataframe with a boolean telling if the bill was paid
-    if(filename=='cameliaBalAG.csv.gz'):
+    if(addPaidBill):
         paidBill = []
         for row in csvinput['dateDernierPaiement'] :
             paidBill.append(not row == "0000-00-00")            
@@ -515,59 +520,65 @@ def analysingDates(csvinput, toSaveGraph = False, toDrawGraphOld = False):
     
     # analysis of the datePiece only for paid bills
     # columnDatePaid is the temporary vector with all converted dates ['datePiece', 'dateEcheance', 'dateDernierPaiement'] for paid bills
+    print "Analysis of the paid bills"
     columnDatePaid = [[datetime.datetime.strptime(c[0], '%Y-%m-%d').date(),
                    datetime.datetime.strptime(c[1], '%Y-%m-%d').date(),
                    datetime.datetime.strptime(c[2], '%Y-%m-%d').date()] for c in column if c[3]]
-    # computing minimal and maximal dates
-    minDate = np.min(column, axis = 0)
-    maxDate = np.max(column, axis = 0)
-    minDatePaid = np.min(columnDatePaid, axis = 0)
-    maxDatePaid = np.max(columnDatePaid, axis = 0)
-    nbBills = len(column)
-    nbPaidBills = len(columnDatePaid)
-    
-    print "Analysis of the paid bills"
-    print ""
-    print "    total amount of paid bills:", nbPaidBills,"-",100.0*nbPaidBills/nbBills,"%"
-    print ""
-    print "    DatePiece column:"
-    print "        min:", minDatePaid[0]
-    print "        max:", maxDatePaid[0]
-    print "    DateEcheance column:"
-    print "        min:", minDatePaid[1]
-    print "        max:", maxDatePaid[1]
-    print "    DateDernierPaiement column:"
-    print "        min:", minDatePaid[2]
-    print "        max:", maxDatePaid[2]
-    print ""
-    print "    mean day number between Piece and Echeance :", (np.mean([(c[1]-c[0]).days for c in columnDatePaid]))
-    print "    mean day number between Piece and DernierPaiement :", (np.mean([(c[2]-c[0]).days for c in columnDatePaid]))
-    print "    mean day number between Echeance and DernierPaiement :", (np.mean([(c[2]-c[1]).days for c in columnDatePaid]))
-    print ""
-    print "    ratio of on-time paid bills :", 100.0*len([1 for c in columnDatePaid if c[2]<=c[1]])/nbPaidBills,"%"
-    print "    mean delay between Echeance and DernierPaiement for late paid bills:", (np.mean([(c[2]-c[1]).days for c in columnDatePaid  if c[2]>c[1]]))
-    print ""
+    if len(columnDatePaid)>0:
+        # computing minimal and maximal dates
+        minDate = np.min(column, axis = 0)
+        maxDate = np.max(column, axis = 0)
+        minDatePaid = np.min(columnDatePaid, axis = 0)
+        maxDatePaid = np.max(columnDatePaid, axis = 0)
+        nbBills = len(column)
+        nbPaidBills = len(columnDatePaid)
+        
+        print ""
+        print "    total amount of paid bills:", nbPaidBills,"-",100.0*nbPaidBills/nbBills,"%"
+        print ""
+        print "    DatePiece column:"
+        print "        min:", minDatePaid[0]
+        print "        max:", maxDatePaid[0]
+        print "    DateEcheance column:"
+        print "        min:", minDatePaid[1]
+        print "        max:", maxDatePaid[1]
+        print "    DateDernierPaiement column:"
+        print "        min:", minDatePaid[2]
+        print "        max:", maxDatePaid[2]
+        print ""
+        print "    mean day number between Piece and Echeance :", (np.mean([(c[1]-c[0]).days for c in columnDatePaid]))
+        print "    mean day number between Piece and DernierPaiement :", (np.mean([(c[2]-c[0]).days for c in columnDatePaid]))
+        print "    mean day number between Echeance and DernierPaiement :", (np.mean([(c[2]-c[1]).days for c in columnDatePaid]))
+        print ""
+        print "    ratio of on-time paid bills :", 100.0*len([1 for c in columnDatePaid if c[2]<=c[1]])/nbPaidBills,"%"
+        print "    mean delay between Echeance and DernierPaiement for late paid bills:", (np.mean([(c[2]-c[1]).days for c in columnDatePaid  if c[2]>c[1]]))
+        print ""
+    else:
+        print "    no paid bills"
     
     # analysis of the datePiece only for unpaid bills
     columnDateUnpaid = [[datetime.datetime.strptime(c[0], '%Y-%m-%d').date(),datetime.datetime.strptime(c[1], '%Y-%m-%d').date()] for c in column if not c[3]]
-    # computing minimal and maximal dates for unpaid bills
-    minDateUnpaid = np.min(columnDateUnpaid, axis = 0)
-    maxDateUnpaid = np.max(columnDateUnpaid, axis = 0)
-    nbUnpaidBills = nbBills - nbPaidBills
-    
     print "Analysis of the unpaid bills"
-    print ""
-    print "    total amount of unpaid bills:", nbUnpaidBills,"-",100.0*nbUnpaidBills/nbBills,"%"
-    print ""
-    print "    DatePiece column:"
-    print "        min:", minDateUnpaid[0]
-    print "        max:", maxDateUnpaid[0]
-    print "    DateEcheance column:"
-    print "        min:", minDateUnpaid[1]
-    print "        max:", maxDateUnpaid[1]
-    print ""
-    print "    mean day number between Piece and Echeance :", (np.mean([(c[1]-c[0]).days for c in columnDateUnpaid]))
-    print ""
+    if len(columnDateUnpaid)>0:
+        # computing minimal and maximal dates for unpaid bills
+        minDateUnpaid = np.min(columnDateUnpaid, axis = 0)
+        maxDateUnpaid = np.max(columnDateUnpaid, axis = 0)
+        nbUnpaidBills = nbBills - nbPaidBills
+        
+        print ""
+        print "    total amount of unpaid bills:", nbUnpaidBills,"-",100.0*nbUnpaidBills/nbBills,"%"
+        print ""
+        print "    DatePiece column:"
+        print "        min:", minDateUnpaid[0]
+        print "        max:", maxDateUnpaid[0]
+        print "    DateEcheance column:"
+        print "        min:", minDateUnpaid[1]
+        print "        max:", maxDateUnpaid[1]
+        print ""
+        print "    mean day number between Piece and Echeance :", (np.mean([(c[1]-c[0]).days for c in columnDateUnpaid]))
+        print ""
+    else:
+        print "    no unpaid bills"
     
     if toSaveGraph:
         # PRE PROCESSING 
@@ -1286,7 +1297,7 @@ def analysingIdCorresponding(csvinput, fileToCompare):
     print ""
               
 ''' IV - Scripts and Global Functions '''
-def cleaningCsv(toPrint = True, toDrawGraph = True, ftp = False):
+def importCleaningCsv(toPrint = False, toDrawGraph = True, ftp = False):
     '''
     Function that process the data:
     importing, cleaning and analysing
@@ -1295,34 +1306,34 @@ def cleaningCsv(toPrint = True, toDrawGraph = True, ftp = False):
     toDrawGraph : boolean to show the graphs of the analysis process (boolean) default: True
     ftp : boolean to choose between local and remote data (boolean) default: False
     -- OUT 
-    returns nothing
+    returns the cleaned dataframe (dataframe)
     '''
+    print "Extractiong the BalAG dataframe"
     startTime = time.time()
     # importing the csv file and creating the datframe
     if(ftp):
-        csvinput = importFTPCsv()
+        csvinput = importFTPCsv(addPaidBill=True)
     else:
-        csvinput = importCsv()
+        csvinput = importCsv(addPaidBill=True)
         
     # preprocess the dataframe
     csvinput = cleaningDates(csvinput, toPrint)
     csvinput = cleaningOther(csvinput, toPrint)
     csvinput = cleaningMontant(csvinput, toPrint)
     csvinput = cleaningEntrepId(csvinput, toPrint)
- 
-    prepareInput()
- 
-    # analysing the dateframe
-    analysingDates(csvinput, toDrawGraph)
-    analysingEntrepId(csvinput, toDrawGraph)
-    analysingMontant(csvinput, toDrawGraph)
-    analysingOthers(csvinput)
-    analysingComplete(csvinput, toDrawGraph)
-    
+    if toDrawGraph:
+        prepareInput()
+        # analysing the dateframe
+        analysingDates(csvinput, toDrawGraph)
+        analysingEntrepId(csvinput, toDrawGraph)
+        analysingMontant(csvinput, toDrawGraph)
+        analysingOthers(csvinput)
+        analysingComplete(csvinput, toDrawGraph)
+        # ploting the graphs
+        plt.show()
     Utils.printTime(startTime)
-    
-    # ploting the graphs
-    plt.show()
+    print ""
+    return csvinput
 
 def prepareInput():
     os.chdir("analysis")
@@ -1331,14 +1342,18 @@ def prepareInput():
     os.chdir(str(n)+"_"+time.strftime('%d-%m-%y_%H-%M',time.localtime())+"/") 
     
 def printLastGraphs():
-    os.chdir("analysis")
-    lastdir = os.listdir("../analysis/")[-1]
+    print "Printing graphs"
+    os.chdir("analysis2")
+    lastdir = os.listdir("../analysis2/")[-1]
     os.chdir(lastdir)
     dirs = os.listdir("../"+lastdir)
     for dir in dirs:
         tab = dir.split(".")
         if(tab[1]=="txt"):
+            print dir,
             DrawingTools.drawHistogramFromFile(tab[0]) 
+            print "...done"
+
     
 
 def sideAnalysis(ftp = True):
@@ -1350,12 +1365,12 @@ def sideAnalysis(ftp = True):
     analysingIdCorresponding(csvinput, "CameliaEtab.csv.gz")
 #     analysingIdCorresponding(csvinput, "CameliaBilans.csv.gz")
 
-path = Constants.path
-os.chdir(path)
+# path = Constants.path
+# os.chdir(path)
 
 
 
-cleaningCsv(ftp = True)  
+# cleaningCsv(ftp = True)  
 
 # printLastGraphs()
 

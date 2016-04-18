@@ -59,8 +59,8 @@ bclnIdIntFormat = True
 bclnIdMinimalBillsNumber = False
 clnIdMinimalBillsNumber = 1000
 # clean according to the value of the ID
-bclnIdMinimalIdValue = False
-clnIdMinimalIdValue = 1000000
+bclnIdMinimalIdValue = True
+clnIdMinimalIdValue = 1
 bclnIdMaximalIdValue = False
 clnIdMaximalIdValue = 100000000
 
@@ -68,7 +68,7 @@ clnIdMaximalIdValue = 100000000
 # clean according to the date format
 bclnDatePieceFormat = True
 bclnDateEcheanceFormat = True
-bclnDateDernierPaiementFormat = False
+bclnDateDernierPaiementFormat = True
 # clean according to the consistence of the dates (piece < echeance and piece < dernierpaiement)
 bclnDateInconsistent = True
 # clean according to a maximal gap in month between dates
@@ -91,10 +91,10 @@ bclnMontantNonNegativeValue = True
 # clean according to being an non-zero value
 bclnMontantNonZeroValue = True
 # clean according to a minimal value of the montant
-bclnMontMinimalValue = False
-clnMontMinimalValue = 189048131
+bclnMontMinimalValue = True
+clnMontMinimalValue = 1000
 # clean according to a maximal value of the montant
-bclnMontMaximalValue = False
+bclnMontMaximalValue = True
 clnMontMaximalValue = 1000000
 
 ### CLEANING MONTANT LITIGE

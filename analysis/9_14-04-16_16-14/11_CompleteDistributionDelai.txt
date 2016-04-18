@@ -1,0 +1,10 @@
+﻿name:Distribution des délais de paiement
+xlabel:Délais de paiement (jours)
+ylabel:Nombre de factures (%)
+typeyaxis:linear
+x:0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100+
+y1:1981,20054,80690,146931,169801,177178,406872,410590,200216,178821,167917,164852,287406,186486,114643,77861,45019,29730,22581,15874,30020
+name1:
+percent:True
+name:Distribution des délais de paiement
+

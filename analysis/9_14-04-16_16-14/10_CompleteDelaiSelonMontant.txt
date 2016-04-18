@@ -1,0 +1,8 @@
+﻿name:Distribution des délais de paiement en fonction du montant des factures
+xlabel:Valeur du montant de la facture (euros)
+ylabel:Délais de paiement (jours)
+typeyaxis:linear
+x:e^0.0,e^1.0,e^2.0,e^3.0,e^4.0,e^5.0,e^6.0,e^7.0,e^8.0,e^9.0
+y1:44,42,43,42,44,46,45,43,38,18
+name1:
+name:Distribution des délais de paiement en fonction du montant des factures

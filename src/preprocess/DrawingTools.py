@@ -10,6 +10,7 @@ import Constants
 import Utils
 import plotly.graph_objs as go
 import plotly.plotly as py
+import numpy as np
 
 
 def createHistogram(x,
@@ -66,6 +67,7 @@ def drawHistogram(x,
                   name3="",
                   xlabel="",
                   ylabel="",
+                  percent=False,
                   typeyaxis="linear",
                   name="Graphe Sans Titre",
                   filename="untitledPlot"):
@@ -83,6 +85,7 @@ def drawHistogram(x,
     name1 : name of the data 1 (string) default = ""
     name2 : name of the data 2 (string) default = ""
     name3 : name of the data 3 (string) default = ""
+    percent : boolean that settles if it is needed to normalize the values (boolean) default = False
     xlabel : name of the x-axis (string) default = ""
     ylabel : name of the y-axis (string) default = ""
     typeyaxis : type of y-axis must be 'linear' or 'log' (string) default = "linear"
@@ -92,16 +95,35 @@ def drawHistogram(x,
     returns nothing
     '''
     py.plotly.sign_in('KevinBienvenu','r8vjr5qj9n')
-    trace1 = go.Bar(x=x,y=y1,name=name1,marker=dict(color=color1,line=dict(color='rgb(8,48,107)',width=1.5)))  # @UndefinedVariable
+    if percent:
+        y1 = [int(y) for y in y1]
+        total = np.sum(y1)
+        y1 = [100.0*y/total for y in y1]
+        if y2!=None:
+            y2 = [int(y) for y in y2]
+            total = np.sum(y2)
+            y2 = [100.0*y/total for y in y2]
+        if y3!=None:
+            y3 = [int(y) for y in y3]
+            total = np.sum(y3)
+            y3 = [100.0*y/total for y in y3]
+#     trace1 = go.Bar(x=range(len(y1)),y=y1,name=name1,marker=dict(color=color1,line=dict(color='rgb(8,48,107)',width=1.5)))  # @UndefinedVariable
+    trace1 = go.Bar(x=range(len(y1)),y=y1,name=name1,marker=dict(color=color1,line=dict(color='rgb(8,48,107)',width=1.5)))  # @UndefinedVariable
     data = [trace1]
     if(y2!=None):
-        trace2 = go.Bar(x=x,y=y2,name=name2,marker=dict(color=color2,line=dict(color='rgb(8,48,107)',width=1.5)))  # @UndefinedVariable
+        trace2 = go.Bar(x=range(len(y2)),y=y2,name=name2,marker=dict(color=color2,line=dict(color='rgb(8,48,107)',width=1.5)))  # @UndefinedVariable
         data.append(trace2)
     if(y3!=None):
-        trace3 = go.Bar(x=x,y=y3,name=name3,marker=dict(color=color3,line=dict(color='rgb(8,48,107)',width=1.5)))  # @UndefinedVariable
+        trace3 = go.Bar(x=range(len(y3)),y=y3,name=name3,marker=dict(color=color3,line=dict(color='rgb(8,48,107)',width=1.5)))  # @UndefinedVariable
         data.append(trace3)
+    if x[0][0]=="e":
+        x = ['%.0e' % 10.0**float(xi[2]) if xi[-1]=="0" else "" for xi in x]
     layout = go.Layout(title=name,  # @UndefinedVariable
                        xaxis=dict(title = xlabel,
+                                  tickmode="array",
+                                  tickvals = range(len(x)),
+                                  ticktext = x,
+                                  tickangle = -70,
                                   tickfont=dict(size=14,color='rgb(107, 107, 107)')),
                        yaxis=dict(title=ylabel,
                                   type=typeyaxis,
@@ -115,7 +137,9 @@ def drawHistogram(x,
                        bargap=0.15,
                        bargroupgap=0.1)
     fig = go.Figure(data=data, layout=layout)  # @UndefinedVariable
+#     fig = go.Figure(data=data)  # @UndefinedVariable
     py.image.save_as(fig, filename+".png")
+#     py.plot(fig, filename=filename)
 
 def saveHistogram(x,
                   y1,
@@ -127,6 +151,7 @@ def saveHistogram(x,
                   name1="",
                   name2="",
                   name3="",
+                  percent=False,
                   xlabel="",
                   ylabel="",
                   typeyaxis="linear",
@@ -146,6 +171,7 @@ def saveHistogram(x,
     name1 : name of the data 1 (string) default = ""
     name2 : name of the data 2 (string) default = ""
     name3 : name of the data 3 (string) default = ""
+    percent : boolean that settles if it is needed to normalize the values (boolean) default = False
     xlabel : name of the x-axis (string) default = ""
     ylabel : name of the y-axis (string) default = ""
     typeyaxis : type of y-axis must be 'linear' or 'log' (string) default = "linear"
@@ -162,6 +188,7 @@ def saveHistogram(x,
         Utils.drawArray(openfile, x, "x")
         Utils.drawArray(openfile, y1, "y1")
         openfile.write("name1:"+name1+"\n")
+        openfile.write("percent:"+percent+"\n")
         if y2!=None:
             Utils.drawArray(openfile, y2, "y2")
             openfile.write("name2:"+name2+"\n")
@@ -185,6 +212,7 @@ def drawHistogramFromFile(filename):
     name3=""
     xlabel=""
     ylabel=""
+    percent = False
     typeyaxis="linear"
     name="Graphe Sans Titre"
     with open(filename+".txt", 'r') as openfile:
@@ -213,9 +241,11 @@ def drawHistogramFromFile(filename):
                 name3 = tab[1]
             if tab[0] == "typeyaxis":
                 typeyaxis = tab[1]
+            if tab[0] == "percent":
+                percent = tab[1][:4]=="True"
     drawHistogram(x=x, y1=y1, y2=y2, y3=y3, 
                   name1=name1, name2=name2, name3=name3, 
-                  xlabel=xlabel, ylabel=ylabel, 
+                  xlabel=xlabel, ylabel=ylabel, percent=percent,
                   typeyaxis=typeyaxis, name=name, filename=filename)
           
  

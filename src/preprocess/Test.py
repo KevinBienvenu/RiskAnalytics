@@ -214,15 +214,35 @@ def connectCKFtp2():
 
 
 
-tab=[10,52,12,3,5,2,1,2]
-with open("src/preprocess/test.txt",'w') as fichier:
-    fichier.write("x:"+str(tab))
+# tab=[10,52,12,3,5,2,1,2]
+# with open("src/preprocess/test.txt",'w') as fichier:
+#     fichier.write("x:"+str(tab))
+# 
+# DrawingTools.drawHistogramFromFile("src/preprocess/test.txt")
 
-DrawingTools.drawHistogramFromFile("src/preprocess/test.txt")
+# 
+# import plotly.plotly as py
+# import plotly.graph_objs as go
+# 
+# from datetime import datetime
+# 
+# py.plotly.sign_in('KevinBienvenu','r8vjr5qj9n')
+# 
+# x = [
+#     datetime(year=2013, month=10, day=04),
+#     datetime(year=2013, month=11, day=05),
+#     datetime(year=2013, month=12, day=06)
+# ]
+#  
+# data = [
+#     go.Scatter(  # @UndefinedVariable
+#         x=x,
+#         y=[1, 3, 6]
+#     )
+# ]
+# plot_url = py.plot(data, filename='python-datetime')
 
-
-
-
+print int('25\n')
 
 
 
