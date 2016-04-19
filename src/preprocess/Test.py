@@ -6,6 +6,10 @@ Created on 5 Apr 2016
 
 '''
 
+from PaiementDataExtraction import importFTPCsv
+
+importFTPCsv("cameliaAnnonces.csv.gz")
+
 
 
 

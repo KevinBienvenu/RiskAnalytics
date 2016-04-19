@@ -44,43 +44,45 @@ def getAccount():
     port: the port to make the ftp connection. (int)
     returns a tuple of 4* (None) if an error occurs
     """
-    filename = os.path.join("..","..","login-ftp.txt")
+    filename = os.path.join("..","..","login_ftp.txt")
     try:
         with open(filename, "r") as fileToRead:
             for line in fileToRead:
                 l = line.split(" ")
                 if l[0] == "user":
-                    user = l[1]
+                    user = l[1][:len(l[1])-1]
                 if l[0] == "password":
-                    password = l[1]
+                    password = l[1][:len(l[1])-1]
                 if l[0] == "host":
-                    host = l[1]
+                    host = l[1][:len(l[1])-1]
                 if l[0] == "port":
-                    port = (int)(l[1])
+                    port = (int)(l[1][:len(l[1])-1])
         return (user, password, host, port)
     except:
         print "error : coundn't read the account file"
         return (None, None, None, None)
     
-def connectFtplib(filename, usecols=None, dtype=None):
+def connectFtplib(filename, usecols=None, dtype=None, toPrint = False):
     """
     function that connects to the remote FTP serveur and extract a pandas dataframe
     the downloaded file must be compressed through gzip and containing a csv file.
     -- IN
     filename : the filename with its extension to be downloaded from the remote ftp server (string)
-    usecols : *optional* an array containing the name of the column to extract (string[]) default: None
-    dtype : *optional* a dictionary containing the name of the columns and the type to cast them ({string:string}) default: None
+    usecols : an array containing the name of the column to extract (string[]) default: None
+    dtype : a dictionary containing the name of the columns and the type to cast them ({string:string}) default: None
+    toPrint : boolean that settles if the function should print its progress and results (boolean) default: False
     -- OUT
     db : a pandas dataframe containing the remote database (pandas.Dataframe)
     return None when an error occurs
     """
-    print "==========================================="
-    print "=== Connection to the remote FTP server ==="
-    print "==========================================="
-    print ""
-    print "using ftplib"
-    print "loading :",filename
-    print "" 
+    if toPrint:
+        print "==========================================="
+        print "=== Connection to the remote FTP server ==="
+        print "==========================================="
+        print ""
+        print "using ftplib"
+        print "loading :",filename
+        print "" 
     startTime = time.time()
     ftp = FTP_TLS()
     # retrieving information about account on ftp server
@@ -90,13 +92,13 @@ def connectFtplib(filename, usecols=None, dtype=None):
         return None
     # connecting and logging in
     try:
-        print ftp.connect(host,port)
-        print ftp.login(user,password)
+        ftp.connect(host,port)
+        ftp.login(user,password)
     except:
         print "error : unable to connect to the ftp server"
         return None
     # establishing the security protocol
-    print ftp.prot_p()
+    ftp.prot_p()
     # retrieving the remote file as a binary file
     sio = StringIO.StringIO()
     def handle_binary(more_data):
@@ -107,7 +109,8 @@ def connectFtplib(filename, usecols=None, dtype=None):
         print "error : non-existing file :",filename
         return None
     interval = time.time() - startTime
-    print 'Data downloaded :', interval, 'sec'
+    if toPrint:
+        print 'Data downloaded :', interval, 'sec'
     # Go back to the start of the binary file
     sio.seek(0) 
     # Unziping the file
@@ -124,10 +127,11 @@ def connectFtplib(filename, usecols=None, dtype=None):
         print "error in the extraction of the dataframe"
         return None
     interval = time.time() - startTime 
-    print 'Dataframe created :', interval, 'sec'
+    if toPrint:
+        print 'Dataframe created :', interval, 'sec'
     return db
     
-def connectCKFtp(filename, usecols=None, dtype=None):
+def connectCKFtp(filename, usecols=None, dtype=None, toPrint = False):
     """
     function that connects to the remote FTP serveur and extract a pandas dataframe
     the downloaded file must be compressed through gzip and containing a csv file.
@@ -139,13 +143,14 @@ def connectCKFtp(filename, usecols=None, dtype=None):
     db : a pandas dataframe containing the remote database (pandas.Dataframe)
     return None when an error occurs
     """
-    print "==========================================="
-    print "=== Connection to the remote FTP server ==="
-    print "==========================================="
-    print ""
-    print "using chilkat.CkFTP2"
-    print "loading :",filename
-    print "" 
+    if toPrint:
+        print "==========================================="
+        print "=== Connection to the remote FTP server ==="
+        print "==========================================="
+        print ""
+        print "using chilkat.CkFTP2"
+        print "loading :",filename
+        print "" 
     startTime = time.time()
     # retrieving information about account on ftp server
     (user, password, host, port) = getAccount()
@@ -175,7 +180,8 @@ def connectCKFtp(filename, usecols=None, dtype=None):
         print "error : non-existing file :",filename
         return None
     interval = time.time() - startTime 
-    print 'Data downloaded :', interval, 'sec'
+    if toPrint:
+        print 'Data downloaded :', interval, 'sec'
     ftp.Disconnect()
     ftp.ClearDirCache()
     # Unziping the file
@@ -192,6 +198,7 @@ def connectCKFtp(filename, usecols=None, dtype=None):
         print "error in the extraction of the dataframe"
         return None
     interval = time.time() - startTime 
-    print 'Dataframe created :', interval, 'sec'
+    if toPrint:
+        print 'Dataframe created :', interval, 'sec'
     return db
     

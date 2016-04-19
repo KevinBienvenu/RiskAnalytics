@@ -106,7 +106,7 @@ def importFTPCsv(filename = 'cameliaBalAG.csv.gz',sep='\t',function="ftplib",use
         csvinput = FTPTools.connectCKFtp(filename, usecols, Constants.dtype)
     elif(function=="ftplib"):
         csvinput = FTPTools.connectFtplib(filename, usecols, Constants.dtype)
-    if csvinput == None:
+    if csvinput is None:
         print "error : impossible to import the dataframe"
         return None
     # adding a column to the dataframe with a boolean telling if the bill was paid
@@ -136,7 +136,7 @@ def cleaningEntrepId(csvinput, toPrint = True):
     if toPrint:
         print ""
     # checking if everything is all right with the input
-    if csvinput==None or len(csvinput)==0:
+    if csvinput is None or len(csvinput)==0:
         print "No Data Remaining"
         print ""
         return csvinput
@@ -235,7 +235,7 @@ def cleaningDates(csvinput, toPrint = True):
         print ""
          
     # checking if everything is all right with the input
-    if csvinput==None or len(csvinput)==0:
+    if csvinput is None or len(csvinput)==0:
         print "No Data Remaining"
         print ""
         return csvinput
@@ -328,7 +328,7 @@ def cleaningMontant(csvinput, toPrint = True):
     if toPrint:
         print ""
     # validating the input
-    if len(csvinput)==0:
+    if csvinput is None or len(csvinput)==0:
         print "No Data Remaining"
         print ""
         return csvinput
@@ -395,7 +395,7 @@ def cleaningOther(csvinput, toPrint = True):
     if toPrint:
         print ""
     # validating the input
-    if len(csvinput)==0:
+    if csvinput is None or len(csvinput)==0:
         print "No Data Remaining"
         print ""
         return csvinput
@@ -444,6 +444,17 @@ def analyzingEntrepId(csvinput, toSaveGraph = False, toDrawGraphOld = False):
     '''
     print "=== Starting Analysis of entrep_id column ==="
     print ""
+    
+    
+    if csvinput is None:
+        print "no result to analyse"
+        print ""
+        return
+    
+    if not('entrep_id' in csvinput.columns):
+        print "wrong columns"
+        print ""
+        return
     
     # importing column
     column = csvinput['entrep_id'].values
@@ -561,6 +572,20 @@ def analyzingDates(csvinput, toSaveGraph = False, toDrawGraphOld = False):
     print ""
     print "=== Starting Analysis of date columns ==="
     print ""
+
+    if csvinput is None:
+        print "no result to analyse"
+        print ""
+        return
+    
+    if not('datePiece' in csvinput.columns) \
+        or not('dateEcheance' in csvinput.columns) \
+        or not('dateDernierPaiement' in csvinput.columns) \
+        or not ('paidBill' in csvinput.columns):
+        print "wrong columns"
+        print ""
+        return
+    
     column = csvinput[['datePiece','dateEcheance','dateDernierPaiement','paidBill']].values
     
     if len(column) ==0 :
@@ -948,6 +973,17 @@ def analyzingMontant(csvinput, toSaveGraph = False, toDrawGraphOld = False):
     print "=== Starting Analysis of montantPieceEur column ==="
     print ""
     
+    
+    if csvinput is None:
+        print "no result to analyse"
+        print ""
+        return
+    
+    if not('montantPieceEur' in csvinput.columns):
+        print "wrong columns"
+        print ""
+        return
+    
     # importing column
     column = csvinput['montantPieceEur'].values
      
@@ -1022,6 +1058,19 @@ def analyzingOthers(csvinput):
     '''  
     print "=== Starting Analysis of other columns ==="
     print ""
+        
+    if csvinput is None:
+        print "no result to analyse"
+        print ""
+        return
+    
+    if not('montantLitige' in csvinput.columns) \
+        or not('devise' in csvinput.columns) \
+        or not('dateInsert' in csvinput.columns):
+        print "wrong columns"
+        print ""
+        return
+    
     # importing and displaying basic informations
     columnMontantLitige = np.array(csvinput['montantLitige'].values)
     columnDevise = np.array(csvinput['devise'].values)
@@ -1073,6 +1122,24 @@ def analyzingComplete(csvinput, toSaveGraph = False, toDrawGraphOld = False):
     '''  
     print "=== Starting Analysis of all columns ==="
     print ""
+       
+    if csvinput is None:
+        print "no result to analyse"
+        print ""
+        return
+    
+    if not('montantLitige' in csvinput.columns) \
+        or not('devise' in csvinput.columns) \
+        or not('entrep_id' in csvinput.columns) \
+        or not('datePiece' in csvinput.columns) \
+        or not('dateEcheance' in csvinput.columns) \
+        or not('dateDernierPaiement' in csvinput.columns) \
+        or not('montantPieceEur' in csvinput.columns) \
+        or not('dateInsert' in csvinput.columns):
+        print "wrong columns"
+        print ""
+        return
+    
     
     # importing column
     column = csvinput[['entrep_id','datePiece','dateEcheance','dateDernierPaiement','paidBill','montantPieceEur','montantLitige']]
