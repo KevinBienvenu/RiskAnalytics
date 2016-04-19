@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
 Created on 15 avr. 2016
 
@@ -113,7 +114,7 @@ def outOfNowhere(cumm,val):
     return val[np.max([i for i in range(len(cumm)) if cumm[i]<rd]+[0])]+(int)(random.random()*5)
     
      
-os.chdir("../../")
+
 csvinput = PaiementDataExtraction.importCleaningCsv(False, False, False)
 # entrep_id = extractMostRepresentedEntreprise(csvinput)
 # csvinput = importEntreprise(csvinput, entrep_id)

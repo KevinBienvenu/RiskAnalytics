@@ -1,9 +1,24 @@
+# -*- coding: utf-8 -*-
 '''
 Created on 13 Apr 2016
 
-@author: Kevin Bienvenu
+@author: Kévin Bienvenu
 
 Module using plotly to draw nice charts.
+
+=== functions : 
+createHistogram(x,y1,y2,y3,color1,color2,color3,
+                name1,name2,name3,xlabel,ylabel,typeyaxis,name,filename) 
+                : function that saves or draws an histogram using plotly
+drawHistogram(x,y1,y2,y3,color1,color2,color3,
+                name1,name2,name3,xlabel,ylabel,typeyaxis,name,filename)
+                : function that draw the histogram using plotly
+saveHistogram(x,y1,y2,y3,color1,color2,color3,
+                name1,name2,name3,xlabel,ylabel,typeyaxis,name,filename)
+                : function that save a txt file containing all informations about the histogram
+drawHistogramFromFile(filename): function that transform a txt file into a histogram then saves it as a .png file
+
+createHistogram2D() : unused and non-tested function
 '''
 
 import Constants
@@ -12,6 +27,7 @@ import plotly.graph_objs as go
 import plotly.plotly as py
 import numpy as np
 
+''' drawing and saving functions '''
 
 def createHistogram(x,
                   y1,
@@ -73,7 +89,7 @@ def drawHistogram(x,
                   filename="untitledPlot"):
     '''
     function that creates a histogram with up to three data to plot
-    to be drawn later.
+    and saves it locally in a png file
     -- IN
     x : x labels in an array (str[] or int[])
     y1 : first data to plot in an array (int[])
@@ -116,7 +132,7 @@ def drawHistogram(x,
     if(y3!=None):
         trace3 = go.Bar(x=range(len(y3)),y=y3,name=name3,marker=dict(color=color3,line=dict(color='rgb(8,48,107)',width=1.5)))  # @UndefinedVariable
         data.append(trace3)
-    if x[0][0]=="e":
+    if str(x[0])[0]=="e":
         x = ['%.0e' % 10.0**float(xi[2]) if xi[-1]=="0" else "" for xi in x]
     layout = go.Layout(title=name,  # @UndefinedVariable
                        xaxis=dict(title = xlabel,
@@ -247,8 +263,9 @@ def drawHistogramFromFile(filename):
                   name1=name1, name2=name2, name3=name3, 
                   xlabel=xlabel, ylabel=ylabel, percent=percent,
                   typeyaxis=typeyaxis, name=name, filename=filename)
-          
  
+''' unused and non-tested functions '''  
+           
 def createHistogram2D(y0,
                       y1,
                       color0=Constants.colorBluePlotly,
@@ -261,6 +278,7 @@ def createHistogram2D(y0,
                       filename="untitledPlot"):
     '''
     function that creates a histogram 2d with y0 on the x-axis, and y1 on the y-axis
+    *unused and non-tested function*
     '''
     py.plotly.sign_in('KevinBienvenu','r8vjr5qj9n')
     trace0 = go.Histogram2d(x=y0, y=y1,  # @UndefinedVariable

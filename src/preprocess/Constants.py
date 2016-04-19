@@ -1,17 +1,19 @@
+# -*- coding: utf-8 -*-
 '''
 Created on 5 Apr 2016
 
-@author: Kevin Bienvenu
+@author: Kévin Bienvenu
 
 Module containing the constants of the preprocess part
 Including threshold and behavior boolean
+Convention : 
+ = all boolean's names begin with 'b'
+ = all corresponding values are without the 'b'
 '''
 
 import datetime
 import numpy as np
 
-# Initializing path to retrieve data
-path = '../../'
 
 ### About creating the dataframe
 # specifying the data type of columns in the file cameliaBalAG.csv
@@ -26,9 +28,19 @@ dtype = {"entrep_id":np.int32,
 
 
 ### About printing graphs
+# label by month
+labelByMonth = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+## About the new graphs
 # boolean that settles if we store the graphs locally before printing them with plotly
-bToStoreBeforeDrawing = False
-# static variables useful to print graphs in the analysing functions
+bToStoreBeforeDrawing = True
+#colors
+colorBluePlotly = 'rgb(28,173,228)'
+colorGreenPlotly = 'rgb(39,206,213)'
+colorOrangePlotly = 'rgb(62,136,83)'
+
+## About the old graphs
+# static variables useful to print graphs in the analyzing functions
 graphId = 1
 figureId = 1
 # size of the graph windows
@@ -38,18 +50,12 @@ figsize = (18,12)
 subplotShapeDates = 220
 subplotShapeEnterprises = 210
 subplotShapeMontants = 110
+# spaces of the bars
 barSpace = 0.40
 # colors
 colorBlue =(0.0,153.0/255,153.0/255.0)
 colorGreen =(153.0/255.0,255.0/255,255.0/255.0)
 colorOrange = (1.0,153.0/255,0.0)
-colorBluePlotly = 'rgb(28,173,228)'
-colorGreenPlotly = 'rgb(39,206,213)'
-colorOrangePlotly = 'rgb(62,136,83)'
-
-# label by month
-labelByMonth = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-
 
 
 ### CLEANING ID
@@ -63,6 +69,7 @@ bclnIdMinimalIdValue = True
 clnIdMinimalIdValue = 1
 bclnIdMaximalIdValue = False
 clnIdMaximalIdValue = 100000000
+
 
 ### CLEANING DATES
 # clean according to the date format
@@ -83,6 +90,7 @@ bclnDateMaximalDate = False
 clnDateMaximalDate = "2003-12-31"
 clnDateMaximalDate = datetime.datetime.strptime(clnDateMaximalDate,"%Y-%m-%d").date()
 
+
 ### CLEANING MONTANTS
 # clean according to being an int
 bclnMontantIntFormat = True
@@ -97,6 +105,7 @@ clnMontMinimalValue = 1000
 bclnMontMaximalValue = True
 clnMontMaximalValue = 1000000
 
+
 ### CLEANING MONTANT LITIGE
 # clean according to a zero-valued montantLitige
 bclnMontantLitigeNonZero = False
@@ -109,6 +118,7 @@ banaDateLargeAnalysis = False
 anaDateStepMonthGraph = 12
 anaOtherStandardDate = datetime.datetime.strptime("2010-01-13","%Y-%m-%d").date()
 
+
 ### ANALYSING ENTERPRISES
 # value of the step size for displaying bill number
 anaIdStepSizeBillNumber = 10
@@ -119,10 +129,12 @@ anaIdLogCoefficientBillNumber = 5.0
 #    the higher it is the more columns there will be
 anaIdLogCoefficientIds = 5.0
 
+
 ### ANALYSING MONTANTS
 # parameter for the vizualisation of the montant values
 #    the higher it is the more columns there will be
 anaIdLogCoefficientMontants = 5.0
+
 
 ### ANALYSING COMPLETS
 # step size for the distribution of the montant

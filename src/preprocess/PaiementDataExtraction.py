@@ -2,15 +2,37 @@
 '''
 Created on 5 Apr 2016
 
-@author: Kevin Bienvenu
+@author: Kévin Bienvenu
 
-Module containing function extracting informations from the
-file 'cameliaBalAG_extrait.csv'
+Module containing functions extracting informations from the
+file 'cameliaBalAG.csv' 
 
 The module is divided in three parts :
-- Part 0 : importing and exporting functions
-- Part 1 : preprocess functions
-- Part 2 : analysing functions, processing columns one-by-one
+
+=== Part I : Importation of the data
+importCsv(filename,sep,usecols,addPaidBill) : import a local csv file into a pandas.Dataframe 
+importFTPCsv(filename,sep,function,usecols,addPaidBill) : import a remote csv.gz file into a pandas.Dataframe
+
+=== Part II : Cleaning Functions
+cleaningEntrepId(csvinput, toPrint) : clean the dataframe according to the EntrepId column
+cleaningDates(csvinput, toPrint) : clean the dataframe according to the dates columns
+cleaningMontant(csvinput, toPrint) : clean the dataframe according to the montantPieceEur column
+cleaningOther(csvinput, toPrint) : clean the dataframe according to the other columns
+
+=== Part III - Analysing Functions
+analyzingEntrepId(csvinput, toSaveGraph, toDrawGraphOld) : analyzes and draws graphs about the EntrepId column
+analyzingDates(csvinput, toSaveGraph, toDrawGraphOld) : analyzes and draws graphs about the dates columns
+analyzingMontant(csvinput, toSaveGraph, toDrawGraphOld) : analyzes and draws graphs about the montantPieceEur column
+analysingOther(csvinput, toSaveGraph, toDrawGraphOld) : analyzes and draws graphs about the other columns
+analysingComplete(csvinput, toSaveGraph, toDrawGraphOld) : analyzes and draws graphs about all the columns
+analysingIdCorresponding(csvinput, fileToCompare) : compares the EntrepId column to another file of the database
+
+=== PART IV - Scripts and Global Functions
+importAndCleanCsv(toPrint, ftp) : imports the local or remote file and cleans it
+importAndAnalyseCsv(toPrint, todoAnalysis, toDrawGraph, ftp) : imports, cleans and analyzes the csv file
+prepareDirForGraphExport() : prepare the directories to export the graph from the analysis
+printLastGraphs() : transforms the last export of graphs from .txt to .png
+sideAnalysis(ftp) : compare the csv file to other files on the ftp server
 
 '''
 
@@ -34,28 +56,37 @@ import Constants
 def importCsv(filename = 'cameliaBalAG_extraitRandom.csv',sep='\t',usecols = None,addPaidBill = False):
     '''
     function that imports the content of the csv file into the global
-    variable csvinput. The path is also changed here to match the global 
-    address contained in the variable path
+    variable csvinput. The csv file must be stored stored locally.
     -- IN
-    fileName : name of the file, including the extension (string) default : 'cameliaBalAG_extraitRandom.csv'
+    filename : name of the file, including the extension (string) default : 'cameliaBalAG_extraitRandom.csv'
     sep : separator for the pandas read_csv function (regexp) default : '\t'
     usecols : array containing the names of the column we want to import, 
         if None import all (string[] or None) default : None
     addPaidBill : boolean that settles if we add a column PaidBill (boolean) default : False
     -- OUT
-    returns the dataframe out of the csv file
+    csvinput: the dataframe out of the csv file (pandas.Dataframe)
+    returns None if an error occurs
     '''
-    os.chdir("../../")
-    csvinput = pd.read_csv(filename,sep=sep,usecols = usecols)
+    os.chdir(os.path.join("..",".."))
+    # reading the local file
+    try: 
+        csvinput = pd.read_csv(filename,sep=sep,usecols = usecols)
+    except:
+        print "error : impossible to read the file"
+        return None
     # adding a column to the dataframe with a boolean telling if the bill was paid
     if(addPaidBill):
-        paidBill = []
-        for row in csvinput['dateDernierPaiement'] :
-            paidBill.append(not row == "0000-00-00")            
-        csvinput['paidBill'] = pd.Series(paidBill, index=csvinput.index)
+        if(not 'dateDernierPaiement' in csvinput.columns):
+            print "problem : impossible extraction of paidBill column"
+        else:
+            paidBill = []
+            for row in csvinput['dateDernierPaiement'] :
+                paidBill.append(not row == "0000-00-00")            
+            csvinput['paidBill'] = pd.Series(paidBill, index=csvinput.index)
+    os.chdir(os.path.join("src","preprocess"))
     return csvinput
 
-def importFTPCsv(filename = 'cameliaBalAG.csv.gz',sep='\t',function="ckftp",usecols = None,addPaidBill = False):
+def importFTPCsv(filename = 'cameliaBalAG.csv.gz',sep='\t',function="ftplib",usecols = None,addPaidBill = False):
     '''
     function that imports the content of the csv file into the global
     variable csvinput. the file is downloaded from the remote ftp via
@@ -63,23 +94,30 @@ def importFTPCsv(filename = 'cameliaBalAG.csv.gz',sep='\t',function="ckftp",usec
     -- IN
     filename : name of the file, including the extension (string) default : 'cameliaBalAG.csv.gz'
     sep : separator for the pandas read_csv function (regexp) default : '\t'
-    function : name of the importation function to be used "ckftp" or "ftplib" (string) default : "ckftp"
+    function : name of the importation function to be used "ckftp" or "ftplib" (string) default : "ftplib"
     usecols : array containing the names of the column we want to import, 
         if None import all (string[] or None) default : None
     addPaidBill : boolean that settles if we add a column PaidBill (boolean) default : False
     -- OUT
     returns the dataframe out of the csv file
     '''
+    # importing the remote file
     if(function=="ckftp"):
         csvinput = FTPTools.connectCKFtp(filename, usecols, Constants.dtype)
     elif(function=="ftplib"):
         csvinput = FTPTools.connectFtplib(filename, usecols, Constants.dtype)
+    if csvinput == None:
+        print "error : impossible to import the dataframe"
+        return None
     # adding a column to the dataframe with a boolean telling if the bill was paid
     if(addPaidBill):
-        paidBill = []
-        for row in csvinput['dateDernierPaiement'] :
-            paidBill.append(not row == "0000-00-00")            
-        csvinput['paidBill'] = pd.Series(paidBill, index=csvinput.index)
+        if(not 'dateDernierPaiement' in csvinput.columns):
+            print "problem : impossible extraction of paidBill column"
+        else:
+            paidBill = []
+            for row in csvinput['dateDernierPaiement'] :
+                paidBill.append(not row == "0000-00-00")            
+            csvinput['paidBill'] = pd.Series(paidBill, index=csvinput.index)
     return csvinput
 
 
@@ -87,19 +125,23 @@ def importFTPCsv(filename = 'cameliaBalAG.csv.gz',sep='\t',function="ckftp",usec
 def cleaningEntrepId(csvinput, toPrint = True):
     '''
     function that cleans the content of the first column 'entrep_id'
-    according to the behaviors described in Constants.
+    according to the behaviors described in Constants and returns the cleaned dataframe
     -- IN
     csvinput : pandas dataframe containing the Payment csv file (dataframe)
     toPrint : boolean that settles the display of computed informations (boolean) (default: False)
     -- OUT
-    returns csvinput (dataframe)
+    csvinput : the cleaned dataframe (dataframe)
     '''
     print "=== Starting Cleaning of entrep_id column ==="
     if toPrint:
         print ""
-    if len(csvinput)==0:
+    # checking if everything is all right with the input
+    if csvinput==None or len(csvinput)==0:
         print "No Data Remaining"
         print ""
+        return csvinput
+    if not 'entrep_id' in csvinput.columns:
+        print "error : No column to analyse - entrep_id"
         return csvinput
     # initializing variables
     #    dictionary linking entrep_id to concerned rows
@@ -137,7 +179,7 @@ def cleaningEntrepId(csvinput, toPrint = True):
     if Constants.bclnIdMinimalIdValue or Constants.bclnIdMaximalIdValue:
         compt = 0
         for entreprise in entrepriseToBillNumber.keys():
-            if entreprise<Constants.clnIdMinimalIdValue:
+            if Constants.bclnIdMinimalIdValue and entreprise<Constants.clnIdMinimalIdValue:
                 entrepriseToDrop.append(entreprise)
                 compt += 1
             if Constants.bclnIdMaximalIdValue and entreprise>Constants.clnIdMaximalIdValue:
@@ -167,10 +209,10 @@ def cleaningEntrepId(csvinput, toPrint = True):
     for entreprise in entrepriseToDrop:
         for row in entrepriseToRowsDict[entreprise]:
             rowToDrop.append(row)
-    csvinput = csvinput.drop(csvinput.index[rowToDrop])
+    csvinput.drop(csvinput.index[rowToDrop], inplace = True)
     if toPrint:
         print "==> preprocess completed"
-        print "   number of deleted rows :", len(np.unique(rowToDrop))
+        print "   number of deleted rows :", len(rowToDrop)
         print "   new amount of rows :", len(csvinput)
         print ""
         print ""
@@ -191,13 +233,21 @@ def cleaningDates(csvinput, toPrint = True):
     print "=== Starting Cleaning of date columns ==="
     if toPrint:
         print ""
-        
-        
-    if len(csvinput)==0:
+         
+    # checking if everything is all right with the input
+    if csvinput==None or len(csvinput)==0:
         print "No Data Remaining"
         print ""
         return csvinput
-        
+    if not 'datePiece' in csvinput.columns:
+        print "error : No column to analyse - datePiece"
+        return csvinput 
+    if not 'dateEcheance' in csvinput.columns:
+        print "error : No column to analyse - dateEcheance"
+        return csvinput 
+    if not 'dateDernierPaiement' in csvinput.columns:
+        print "error : No column to analyse - dateDernierPaiement"
+        return csvinput   
     # importing column
     column = np.array(csvinput[['datePiece','dateEcheance','dateDernierPaiement']].values)
     nbEntries = len(column.T[0])
@@ -213,13 +263,9 @@ def cleaningDates(csvinput, toPrint = True):
     comptMinimal = 0
     comptMaximal = 0
     ind = 0
-    step = 1
-    pourcent = step
     for c in column:
-        s = Utils.validateDate(c[0], c[1], c[2])
-#         if(100*ind/nbEntries>pourcent):
-#             print pourcent,'%'
-#             pourcent += step            
+        # validating the dates
+        s = Utils.validateDate(c[0], c[1], c[2])      
         if len(s)>0:
             compt += 1
             rowToDrop.append(ind)
@@ -238,7 +284,6 @@ def cleaningDates(csvinput, toPrint = True):
         if "maximalDate" in s:
             comptMaximal += 1
         ind += 1
-         
     if toPrint:
         print "date format errors:", compt, "-", 100.0*compt/(nbEntries),"%"
         if Constants.bclnDatePieceFormat:
@@ -282,15 +327,16 @@ def cleaningMontant(csvinput, toPrint = True):
     print "=== Starting Cleaning of montantPieceEur columns ==="
     if toPrint:
         print ""
-    
-    # importing column
-    nbEntries = len(csvinput['montantPieceEur'])
-    if nbEntries==0:
+    # validating the input
+    if len(csvinput)==0:
         print "No Data Remaining"
         print ""
         return csvinput
-    rowToDrop = []
-    
+    if not 'montantPieceEur' in csvinput.columns:
+        print "error : No column to analyse - montantPieceEur"
+        return csvinput 
+    nbEntries = len(csvinput['montantPieceEur'])
+    rowToDrop = [] 
     ind = 0
     nbMaxi = 0
     nbMini = 0
@@ -325,7 +371,7 @@ def cleaningMontant(csvinput, toPrint = True):
         
     # preprocess data
     if(len(rowToDrop)>0):
-        csvinput = csvinput.drop(csvinput.index[rowToDrop])
+        csvinput.drop(csvinput.index[rowToDrop], inplace = True)
     if toPrint:
         print "==> preprocess completed"
         print "  number of deleted rows :", len(rowToDrop)
@@ -348,11 +394,14 @@ def cleaningOther(csvinput, toPrint = True):
     print "=== Starting Cleaning of montantLitige column ==="
     if toPrint:
         print ""
-    
+    # validating the input
     if len(csvinput)==0:
         print "No Data Remaining"
         print ""
         return csvinput
+    if not 'montantLitige' in csvinput.columns:
+        print "error : No column to analyse - montantLitige"
+        return csvinput 
     # importing column
     column = csvinput['montantLitige']
     nbEntries = len(column)
@@ -372,7 +421,7 @@ def cleaningOther(csvinput, toPrint = True):
     
     # preprocess data
     if(len(rowToDrop)>0):
-        csvinput = csvinput.drop(csvinput.index[rowToDrop])
+        csvinput.drop(csvinput.index[rowToDrop], inplace = True)
     if toPrint:
         print "==> preprocess completed"
         print "  number of deleted rows :", len(rowToDrop)
@@ -382,8 +431,8 @@ def cleaningOther(csvinput, toPrint = True):
             
     return csvinput  
        
-''' III - Analysing Functions '''
-def analysingEntrepId(csvinput, toSaveGraph = False, toDrawGraphOld = False):
+''' III - Analyzing Functions '''
+def analyzingEntrepId(csvinput, toSaveGraph = False, toDrawGraphOld = False):
     '''
     function that analyses the content of the 'entrep_id' column
     it displays information about enterprises and the number of bills.
@@ -497,7 +546,7 @@ def analysingEntrepId(csvinput, toSaveGraph = False, toDrawGraphOld = False):
         plt.xlabel("value of ID", fontsize=10)
         plt.ylabel("number of enterprises", fontsize=10)
 
-def analysingDates(csvinput, toSaveGraph = False, toDrawGraphOld = False):
+def analyzingDates(csvinput, toSaveGraph = False, toDrawGraphOld = False):
     '''
     function that analyses the content of the date columns
     'datePiece','dateEcheance','dateDernierPaiement'
@@ -886,7 +935,7 @@ def analysingDates(csvinput, toSaveGraph = False, toDrawGraphOld = False):
                    fontsize = 10)
         plt.title("Analysis of the proportions of on-time paid and paid bills over the months", fontsize=12)
                         
-def analysingMontant(csvinput, toSaveGraph = False, toDrawGraphOld = False):
+def analyzingMontant(csvinput, toSaveGraph = False, toDrawGraphOld = False):
     '''
     function that analyses the content of the column 'montantPieceEur'
     and displays information about it
@@ -960,7 +1009,7 @@ def analysingMontant(csvinput, toSaveGraph = False, toDrawGraphOld = False):
         plt.xlabel("value of bills", fontsize=10)
         plt.ylabel("number of entries", fontsize=10)
 
-def analysingOthers(csvinput):  
+def analyzingOthers(csvinput):  
     '''
     function that analyses the content of the other columns 
     'montantLitige', 'devise', 'dateInsert'
@@ -1011,7 +1060,7 @@ def analysingOthers(csvinput):
     print "ratio of non-standard dateInsert :",100.0*len([1 for a in columnDateInsert if not datetime.datetime.strptime(a[:10],"%Y-%m-%d").date()==Constants.anaOtherStandardDate])/len(columnDevise),"%"
     print "   other possible values for dateInsert :", otherDateInsert
         
-def analysingComplete(csvinput, toSaveGraph = False, toDrawGraphOld = False):
+def analyzingComplete(csvinput, toSaveGraph = False, toDrawGraphOld = False):
     '''
     function that analyses the content of the columns
     'entrep_id', 'datePiece', 'dateEcheance', 'dateDernierPaiement' and 'montantPieceEur'
@@ -1298,7 +1347,7 @@ def analysingComplete(csvinput, toSaveGraph = False, toDrawGraphOld = False):
                               mpatches.Patch(color=Constants.colorOrange, label='Mean delay')], 
                    fontsize = 10)
 
-def analysingIdCorresponding(csvinput, fileToCompare):
+def analyzingIdCorresponding(csvinput, fileToCompare):
     '''
     function that checks if all the entreprises references in csvinput are in 
     the other csv file 'CameliaEtab.csv.gz'
@@ -1320,16 +1369,15 @@ def analysingIdCorresponding(csvinput, fileToCompare):
     print ""
               
 ''' IV - Scripts and Global Functions '''
-def importCleaningCsv(toPrint = False, toDrawGraph = True, ftp = False):
+def importAndCleanCsv(toPrint = False, ftp = False):
     '''
     Function that process the data:
     importing, cleaning and analysing
     -- IN
     toPrint : boolean to show the log of the cleaning process (boolean) default: True
-    toDrawGraph : boolean to show the graphs of the analysis process (boolean) default: True
     ftp : boolean to choose between local and remote data (boolean) default: False
     -- OUT 
-    returns the cleaned dataframe (dataframe)
+    csvinput : the cleaned dataframe (pandas.Dataframe)
     '''
     print "Extracting the BalAG dataframe"
     startTime = time.time()
@@ -1344,47 +1392,101 @@ def importCleaningCsv(toPrint = False, toDrawGraph = True, ftp = False):
     csvinput = cleaningOther(csvinput, toPrint)
     csvinput = cleaningMontant(csvinput, toPrint)
     csvinput = cleaningEntrepId(csvinput, toPrint)
-#     if toDrawGraph:
-#         prepareInput()
-        # analysing the dateframe
-#         analysingDates(csvinput, toDrawGraph)
-#         analysingEntrepId(csvinput, toDrawGraph)
-    analysingMontant(csvinput, toDrawGraph)
-#         analysingOthers(csvinput)
-#         analysingComplete(csvinput, toDrawGraph)
-        # ploting the graphs
-#         plt.show()
     Utils.printTime(startTime)
     print ""
     return csvinput
 
+def importAndAnalyseCsv(toPrint = False, toDrawGraph = True, ftp = False):
+    '''
+    Function that process the data:
+    importing, cleaning and analyzing
+    and returns the dataframe
+    -- IN
+    toPrint : boolean to show the log of the cleaning process (boolean) default: False
+    toDrawGraph : boolean to export the graphs of the analysis process (boolean) default: True
+    ftp : boolean to choose between local and remote data (boolean) default: False
+    -- OUT 
+    csvinput : the cleaned dataframe (pandas.Dataframe)
+    '''
+    print "Extracting the BalAG dataframe"
+    startTime = time.time()
+    # importing the csv file and creating the datframe
+    if(ftp):
+        csvinput = importFTPCsv(addPaidBill=True)
+    else:
+        csvinput = importCsv(addPaidBill=True)
+        
+    # preprocess the dataframe
+    csvinput = cleaningDates(csvinput, toPrint)
+    csvinput = cleaningOther(csvinput, toPrint)
+    csvinput = cleaningMontant(csvinput, toPrint)
+    csvinput = cleaningEntrepId(csvinput, toPrint)
+    if toDrawGraph:
+        prepareInput()
+    # analysing the dateframe
+    analyzingDates(csvinput, toDrawGraph)
+    analyzingEntrepId(csvinput, toDrawGraph)
+    analyzingMontant(csvinput, toDrawGraph)
+    analyzingOthers(csvinput)
+    analyzingComplete(csvinput, toDrawGraph)
+    # ploting the graphs
+    plt.show()
+    Utils.printTime(startTime)
+    os.chdir("..")
+    print ""
+    return csvinput
+
 def prepareInput():
-    os.chdir("analysis")
-    n = len(os.listdir("../analysis/"))
+    """
+    functions that prepare the directory to export the graph during the analyzing steps.
+    -- IN
+    takes no arguments
+    -- OUT
+    returns nothing
+    """
+    os.chdir(os.path.join("..","..","analysis"))
+    n = len(os.listdir("."))
     os.mkdir(str(n)+"_"+time.strftime('%d-%m-%y_%H-%M',time.localtime()))
-    os.chdir(str(n)+"_"+time.strftime('%d-%m-%y_%H-%M',time.localtime())+"/") 
+    os.chdir(str(n)+"_"+time.strftime('%d-%m-%y_%H-%M',time.localtime())) 
     
 def printLastGraphs():
+    """
+    function that seek for all .txt files in the last folder of export and transform them
+    into graph through plotly and export them in png.
+    -- IN
+    takes no argument
+    -- OUT
+    returns nothing
+    """
     print "Printing graphs"
     os.chdir("analysis2")
     lastdir = os.listdir("../analysis2/")[-1]
     os.chdir(lastdir)
     dirs = os.listdir("../"+lastdir)
-    for dir in dirs:
-        tab = dir.split(".")
+    for direct in dirs:
+        tab = direct.split(".")
         if(tab[1]=="txt"):
-            print dir,
+            print direct,
             DrawingTools.drawHistogramFromFile(tab[0]) 
             print "...done"
 
 def sideAnalysis(ftp = True):
+    """
+    function that compare the local or remote file to other remote files
+    of the database to see the differences in the entrep_id columns.
+    -- IN
+    ftp : boolean that settles if we compare the local or remote version of CameliaBalAG - 
+        True for the remote version (boolean) default : True
+    -- OUT
+    returns nothing
+    """
     # importing the csv file and creating the datframe
     if(ftp):
         csvinput = importFTPCsv()
     else:
         csvinput = importCsv(usecols=['entrep_id'])
-    analysingIdCorresponding(csvinput, "CameliaEtab.csv.gz")
-#     analysingIdCorresponding(csvinput, "CameliaBilans.csv.gz")
+    analyzingIdCorresponding(csvinput, "CameliaEtab.csv.gz")
+#     analyzingIdCorresponding(csvinput, "CameliaBilans.csv.gz")
 
 # path = Constants.path
 # os.chdir(path)
@@ -1397,4 +1499,3 @@ def sideAnalysis(ftp = True):
 
 # sideAnalysis(True)
 
-importCleaningCsv(toPrint=False, toDrawGraph=False, ftp=False)

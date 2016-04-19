@@ -1,10 +1,21 @@
+# -*- coding: utf-8 -*-
 '''
 Created on 5 Apr 2016
 
-@author: Kevin Bienvenu
+@author: Kévin Bienvenu
 
-Module containing utilies functions used in other modules
+Module containing useful functions used in other preprocess modules
 those functions are static
+
+=== functions :
+validateDate(txtDate0, txtDate1, txtDate2) : checks if there are errors in the dates
+validateDateError(txtDate) : checks if there are errors in the date format
+nbMonthsBetweenDates(d0, d1) : computes the number of months between two dates
+validateMontant(montant) : checks if there are errors in the montant value
+checkIntFormat(i, isNonNegative, isNonZero) : checks several behaviour of the input
+printTime(startTime) : print the time in HH:MM:SS format since startTime
+drawArray(openfile, array, arrayName) : write in an openfile the values of an array
+
 '''
 
 import datetime
@@ -68,8 +79,12 @@ def validateDate(txtDate0, txtDate1, txtDate2):
         
 def validateDateError(txtDate):
     '''
-    function that returns a boolean set to True if the date is a valid one
-    or False else. 
+    function that returns the date if the txt is a valid date format and None otherwise
+    -- IN
+    txtDate : a string containing a date in format %Y-%m-%d (string)
+    -- OUT
+    d : the date converted in the right format (datetime.date)
+        return None if an error occurs
     '''
     try:
         d = datetime.datetime.strptime(txtDate, '%Y-%m-%d').date()
@@ -82,8 +97,8 @@ def nbMonthsBetweenDates(d0, d1):
     function that returns the number of months between two dates
     the order doesn't matter, d0 can be larger than d1.
     -- IN
-    d0 : date of start (str or datetime.date)
-    d1 : date of end (str or datetime.date)
+    d0 : date of start (str or datetime.datetime or datetime.date)
+    d1 : date of end (str or datetime.datetime or datetime.date)
     -- OUT
     number of month between the dates (positive int)
     '''
@@ -95,6 +110,8 @@ def nbMonthsBetweenDates(d0, d1):
         d0 = d0.date()
     if isinstance(d1, datetime.datetime):
         d1 = d1.date()
+    # the value of 30.45 is just because the exact calculation is a mess...
+    # furthermore, it works pretty well like that :)
     return int(abs((d0-d1).days/30.45))
 
 def validateMontant(montant):
