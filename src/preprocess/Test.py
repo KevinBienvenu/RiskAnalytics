@@ -8,10 +8,13 @@ Created on 5 Apr 2016
 
 from PaiementDataExtraction import *
 
-printConfiguration(False)
+# printConfiguration(False)
 
-# importAndAnalyseCsv(True,False,False)
+importAndAnalyseCsv(True,False,ftp=True)
 # printLastGraphs()
+
+
+# csvEtab = getCsvEtab(None)
 
 
 

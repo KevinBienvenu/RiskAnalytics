@@ -27,12 +27,17 @@ analysingOther(csvinput, toSaveGraph, toDrawGraphOld) : analyzes and draws graph
 analysingComplete(csvinput, toSaveGraph, toDrawGraphOld) : analyzes and draws graphs about all the columns
 analysingIdCorresponding(csvinput, fileToCompare) : compares the EntrepId column to another file of the database
 
-=== PART IV - Scripts and Global Functions
+=== PART IV - Analysing functions using other files
+
+
+=== PART V - Scripts and Global Functions
 importAndCleanCsv(toPrint, ftp) : imports the local or remote file and cleans it
 importAndAnalyseCsv(toPrint, todoAnalysis, toDrawGraph, ftp) : imports, cleans and analyzes the csv file
 prepareDirForGraphExport() : prepare the directories to export the graph from the analysis
 printLastGraphs() : transforms the last export of graphs from .txt to .png
 sideAnalysis(ftp) : compare the csv file to other files on the ftp server
+
+
 
 '''
 
@@ -104,9 +109,9 @@ def importFTPCsv(filename = 'cameliaBalAG.csv.gz',sep='\t',function="ftplib",use
     '''
     # importing the remote file
     if(function=="ckftp"):
-        csvinput = FTPTools.connectCKFtp(filename, usecols, Constants.dtype)
+        csvinput = FTPTools.retrieveGZipCKFtp(filename, usecols, Constants.dtype)
     elif(function=="ftplib"):
-        csvinput = FTPTools.connectFtplib(filename, usecols, Constants.dtype)
+        csvinput = FTPTools.retrieveGZipFtplib(filename, usecols, Constants.dtype)
     if csvinput is None:
         print "error : impossible to import the dataframe"
         return None
@@ -1436,8 +1441,82 @@ def analyzingIdCorresponding(csvinput, fileToCompare):
     print "nombre d'entreprises communes :", len(columnIdBalAG) - len(nonAppearing)
     print "entreprises inconnues :",list(nonAppearing)
     print ""
-              
-''' IV - Scripts and Global Functions '''
+     
+''' IV - Analysing functions using other files '''
+    
+def getCsvEtab(csvinput, toSaveGraph = False):
+    usecols = ['etab_id','entrep_id','capital','DCREN','EFF_ENT']
+    dtype = {'etab_id':np.int32,'entrep_id':np.int32,'capital':np.int32,'DCREN':np.int32,'EFF_ENT':np.int32}
+    csvEtab = FTPTools.retrieveCsvFtplib("ProcessedData/notificationsProtocol.csv", toPrint=True)
+    return csvEtab
+
+def analyzingEntrepData(csvinput, csvEtab, toSaveGraph = False):
+    print "=== Starting Analysis of Entreprises Data ==="
+    print ""
+    
+    # first do the extraction of csvinput
+    if csvinput is None:
+        print "no result to analyse"
+        print ""
+        return
+    if not('entrep_id' in csvinput.columns):
+        print "wrong columns"
+        print ""
+        return
+    # importing column
+    column = csvinput['entrep_id'].values
+    if len(column) ==0 :
+        print "no result to analyse"
+        print ""
+        return
+    
+    # initializing variables
+    #     setting size variables
+    nbEntreprises = len(np.unique(column))
+    print "enterprises number :" , nbEntreprises
+    # initializing variables
+    #    dictionary linking entrep_id to concerned rows
+    entrepriseToRowsDict = {}
+    ind = 0
+    for entreprise in csvinput['entrep_id'].values:
+        if not entrepriseToRowsDict.has_key(entreprise):
+            entrepriseToRowsDict[entreprise] = []
+        entrepriseToRowsDict[entreprise].append(ind)
+        ind += 1
+    # creating the new clean dataframe
+    entrepriseData = pd.DataFrame(columns=['numberOfBills','numberOfEtab','capital','dateCreation','effectif', 
+                                           'score1', 'score2','score3'], 
+                                  index=entrepriseToRowsDict.keys())
+    for entry in entrepriseToRowsDict.keys():
+        # entrepriseData = [numberOfBills, numberOfEtab, capital, dateCreation, effectif]
+        entrepriseData[entry] = [len(entrepriseToRowsDict[entry]),0,0,0,0,0,0,0]
+    entrepriseToRowsDict = {}
+    
+    print "extracting values of the Etab csv"
+    print ""
+    column = csvEtab.values
+    for line in column:
+        print line
+        # line = ['etab_id','entrep_id','capital','DCREN','EFF_ENT'] 
+        if line[1] not in entrepriseData.keys():
+            continue
+        entrepriseData[line[1]]['numberOfEtab']+=1
+        entrepriseData[line[1]]['capital'] = max(int(line[2]), entrepriseData[line[1]]['capital'])
+        entrepriseData[line[1]]['dateCreation'] = int(line[3])
+        entrepriseData[line[1]]['effectif'] = max(int(line[4]), entrepriseData[line[1]]['effectif'])
+    # analyzing results
+    for t in ['numberOfBills','numberOfEtab','capital','effectif']:
+        print "= Analyzing",t
+        print "max:",np.max(entrepriseData[t])
+        print "min:",np.min(entrepriseData[t])
+        print "mean:",np.mean(entrepriseData[t])
+        print "median:",np.median(entrepriseData[t])
+    
+    
+    
+    
+             
+''' V - Scripts and Global Functions '''
 def importAndCleanCsv(toPrint = False, ftp = False):
     '''
     Function that process the data:
