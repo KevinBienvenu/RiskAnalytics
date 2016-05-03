@@ -39,6 +39,7 @@ def createHistogram(x,
                   name1="",
                   name2="",
                   name3="",
+                  percent=False,
                   xlabel="",
                   ylabel="",
                   typeyaxis="linear",
@@ -67,10 +68,17 @@ def createHistogram(x,
     returns nothing
     '''
     if(Constants.bToStoreBeforeDrawing):
-        saveHistogram(x, y1, y2, y3, color1, color2, color3, name1, name2, name3, xlabel, ylabel, typeyaxis, name, filename)
+        saveHistogram(x=x, y1=y1, y2=y2, y3=y3, 
+                      color1=color1, color2=color2, color3=color3, 
+                      name1=name1, name2=name2, name3=name3, 
+                      percent=percent, xlabel=xlabel, ylabel=ylabel, 
+                      typeyaxis=typeyaxis, name=name, filename=filename)
     else:
-        drawHistogram(x, y1, y2, y3, color1, color2, color3, name1, name2, name3, xlabel, ylabel, typeyaxis, name, filename)
-
+        drawHistogram(x=x, y1=y1, y2=y2, y3=y3, 
+                      color1=color1, color2=color2, color3=color3, 
+                      name1=name1, name2=name2, name3=name3, 
+                      percent=percent, xlabel=xlabel, ylabel=ylabel, 
+                      typeyaxis=typeyaxis, name=name, filename=filename)
 def drawHistogram(x,
                   y1,
                   y2=None,
@@ -155,6 +163,7 @@ def drawHistogram(x,
     fig = go.Figure(data=data, layout=layout)  # @UndefinedVariable
 #     fig = go.Figure(data=data)  # @UndefinedVariable
     py.image.save_as(fig, filename+".png")
+#     print "ok"
 #     py.plot(fig, filename=filename)
 
 def saveHistogram(x,
@@ -196,6 +205,7 @@ def saveHistogram(x,
     -- OUT
     returns nothing
     """
+    print filename
     with open(filename+".txt", 'w') as openfile:
         openfile.write("name:"+name+"\n")
         openfile.write("xlabel:"+xlabel+"\n")
@@ -204,7 +214,7 @@ def saveHistogram(x,
         Utils.drawArray(openfile, x, "x")
         Utils.drawArray(openfile, y1, "y1")
         openfile.write("name1:"+name1+"\n")
-        openfile.write("percent:"+percent+"\n")
+        openfile.write("percent:"+str(percent)+"\n")
         if y2!=None:
             Utils.drawArray(openfile, y2, "y2")
             openfile.write("name2:"+name2+"\n")

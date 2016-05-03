@@ -49,6 +49,7 @@ import Utils
 from preprocess import FTPTools
 import DrawingTools
 import Constants
+from Constants import *
 
 
 
@@ -1271,9 +1272,10 @@ def analyzingComplete(csvinput, toSaveGraph = False, toDrawGraphOld = False):
     if toSaveGraph:
         # creating vectors
         nbStepGraphNbEntreprisesByMonth = 12*maxDate.year+maxDate.month - 12*minDate.year - minDate.month + 1
-        vectorNbEntreprisesByMonth = [0 for _ in range(nbStepGraphNbEntreprisesByMonth)]
+        vectorNbEntreprisesByMonth = [0]*nbStepGraphNbEntreprisesByMonth
         nbStepGraphDelayOverMontant = len(informationMontantArray)
         # filling vectors
+        print len(entrepriseDict)
         for entreprise in entrepriseDict.values():
             for i in range(12*entreprise[0].year+entreprise[0].month - 12*minDate.year - minDate.month, 
                            12*entreprise[1].year+entreprise[1].month - 12*minDate.year - minDate.month+1):
@@ -1491,11 +1493,11 @@ def importAndAnalyseCsv(toPrint = False, toDrawGraph = True, ftp = False):
     if toDrawGraph:
         prepareInput()
     # analysing the dateframe
-    analyzingDates(csvinput, toDrawGraph)
-    analyzingEntrepId(csvinput, toDrawGraph)
-    analyzingMontant(csvinput, toDrawGraph)
-    analyzingOthers(csvinput)
-    analyzingComplete(csvinput, toDrawGraph)
+    analyzingDates(csvinput, toSaveGraph=toDrawGraph)
+    analyzingEntrepId(csvinput, toSaveGraph=toDrawGraph)
+    analyzingMontant(csvinput, toSaveGraph=toDrawGraph)
+#     analyzingOthers(csvinput)
+    analyzingComplete(csvinput, toSaveGraph=toDrawGraph)
     # ploting the graphs
     plt.show()
     Utils.printTime(startTime)
@@ -1526,8 +1528,8 @@ def printLastGraphs():
     returns nothing
     """
     print "Printing graphs"
-    os.chdir("analysis2")
-    lastdir = os.listdir("../analysis2/")[-1]
+    os.chdir(os.path.join("..","..","analysis"))
+    lastdir = os.listdir(".")[-1]
     os.chdir(lastdir)
     dirs = os.listdir("../"+lastdir)
     for direct in dirs:
@@ -1536,7 +1538,113 @@ def printLastGraphs():
             print direct,
             DrawingTools.drawHistogramFromFile(tab[0]) 
             print "...done"
+            #     os.chdir(os.path.join("..","src","preprocess"))
 
+def printConfiguration(globalConfig = False):
+    '''
+    function that print the configuration of the launch according to the constants in
+    the Constants python module.
+    -- IN
+    globalConfig : booleanthat settles if the functions displays all the booleans (True)
+                    or just the changes from the default launch configuration (False) (boolean) default : False
+    -- OUT
+    returns nothing
+    '''
+    ### CLEANING ID
+    print "CLEANING ID"
+    # clean according to being an int
+    if globalConfig or not bclnIdIntFormat:
+        print "clean according to being an int :",bclnIdIntFormat
+    # clean according to the number of bills
+    if globalConfig or bclnIdMinimalBillsNumber:
+        print "clean according to the number of bills :",bclnIdMinimalBillsNumber,
+        if bclnIdMinimalBillsNumber:
+            print ":",clnIdMinimalBillsNumber
+        else:
+            print ""
+    # clean according to the value of the ID
+    if globalConfig or not bclnIdMinimalIdValue or clnIdMinimalIdValue!=1:
+        print "clean according to the minimal value of the ID :",bclnIdMinimalIdValue,
+        if bclnIdMinimalIdValue:
+            print ":",clnIdMinimalIdValue
+        else:
+            print ""
+    if globalConfig or bclnIdMaximalIdValue:
+        print "clean according to the maximl value of the ID :",bclnIdMaximalIdValue,
+        if bclnIdMaximalIdValue:
+            print ":",clnIdMaximalIdValue
+        else:
+            print ""
+    
+    
+    ### CLEANING DATES
+    print "CLEANING DATES"
+    # clean according to the date format
+    if globalConfig or not bclnDatePieceFormat:
+        print "clean according to being a proper date for DatePiece :",bclnDatePieceFormat
+    if globalConfig or not bclnDateEcheanceFormat:
+        print "clean according to being a proper date for DateEcheance :",bclnDateEcheanceFormat
+    if globalConfig or bclnDateDernierPaiementFormat:
+        print "clean according to being a proper date for DateDernierPaiement :",bclnDateDernierPaiementFormat
+    # clean according to the consistence of the dates (piece < echeance and piece < dernierpaiement)
+    if globalConfig or not bclnDateInconsistent:
+        print "clean according to the consistence of the dates :",bclnDateInconsistent
+    # clean according to a maximal gap in month between dates
+    if globalConfig or bclnDateMonthDiff:
+        print "clean according to a maximal gap in month between dates :",bclnDateMonthDiff,
+        if bclnDateMonthDiff:
+            print ":",clnDateMonthDiff
+        else:
+            print ""
+    # clean according to a minimal date
+    if globalConfig or bclnDateMinimalDate:
+        print "clean according to a minimal date :",bclnDateMinimalDate,
+        if bclnDateMinimalDate:
+            print ":",clnDateMinimalDate
+        else:
+            print ""
+    # clean according to a maximal date
+    if globalConfig or bclnDateMaximalDate:
+        print "clean according to a maximal date :",bclnDateMaximalDate,
+        if bclnDateMaximalDate:
+            print ":",clnDateMaximalDate
+        else:
+            print ""
+    
+    
+    ### CLEANING MONTANTS
+    print "CLEANING MONTANTS"
+    # clean according to being an int
+    if globalConfig or not bclnMontantIntFormat:
+        print "clean according to being an int :",bclnMontantIntFormat
+    # clean according to being a positive value
+    if globalConfig or not bclnMontantNonNegativeValue:
+        print "clean according to being a positive value :",bclnMontantNonNegativeValue
+    # clean according to being an non-zero value
+    if globalConfig or not bclnMontantNonZeroValue:
+        print "clean according to being an non-zero value :",bclnMontantNonZeroValue
+    # clean according to a minimal value of the montant
+    if globalConfig or bclnMontMinimalValue:
+        print "clean according to a minimal value of the montant :",bclnMontMinimalValue,
+        if bclnMontMinimalValue:
+            print ":",clnMontMinimalValue
+        else:
+            print ""
+    # clean according to a maximal value of the montant
+    if globalConfig or bclnMontMaximalValue:
+        print "clean according to a maximal value of the montant :",bclnMontMaximalValue,
+        if bclnMontMaximalValue:
+            print ":",clnMontMaximalValue
+        else:
+            print ""
+    
+    
+    ### CLEANING MONTANT LITIGE
+    print "CLEANING MONTANT LITIGE"
+    # clean according to a zero-valued montantLitige
+    if globalConfig or bclnMontantLitigeNonZero:
+        print "clean according to a zero-valued montantLitige :",bclnMontantLitigeNonZero
+      
 def sideAnalysis(ftp = True):
     """
     function that compare the local or remote file to other remote files

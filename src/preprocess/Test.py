@@ -6,9 +6,14 @@ Created on 5 Apr 2016
 
 '''
 
-from PaiementDataExtraction import importFTPCsv
+from PaiementDataExtraction import *
 
-importFTPCsv("cameliaAnnonces.csv.gz")
+printConfiguration(False)
+
+# importAndAnalyseCsv(True,False,False)
+# printLastGraphs()
+
+
 
 
 

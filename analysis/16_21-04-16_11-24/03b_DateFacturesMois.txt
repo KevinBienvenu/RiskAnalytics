@@ -1,0 +1,8 @@
+name:Distribution des factures par mois
+xlabel:
+ylabel:Nombre de factures
+typeyaxis:linear
+x:Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec
+y1:439,493,695,607,243,250,267,210,295,205,185,174
+name1:
+percent:False

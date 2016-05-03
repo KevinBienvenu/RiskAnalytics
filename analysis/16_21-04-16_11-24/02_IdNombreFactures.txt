@@ -1,0 +1,8 @@
+name:Distribution du nombre de factures
+xlabel:Nombre de factures
+ylabel:Nombre d'entreprises
+typeyaxis:log
+x:e^0.0,e^0.2,e^0.4,e^0.6,e^0.8,e^1.0,e^1.2,e^1.4,e^1.6
+y1:2738,238,53,47,13,5,10,1,2
+name1:
+percent:False

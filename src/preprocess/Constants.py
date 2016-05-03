@@ -63,7 +63,7 @@ colorOrange = (1.0,153.0/255,0.0)
 bclnIdIntFormat = True
 # clean according to the number of bills
 bclnIdMinimalBillsNumber = False
-clnIdMinimalBillsNumber = 1000
+clnIdMinimalBillsNumber = 10
 # clean according to the value of the ID
 bclnIdMinimalIdValue = True
 clnIdMinimalIdValue = 1
@@ -75,7 +75,7 @@ clnIdMaximalIdValue = 100000000
 # clean according to the date format
 bclnDatePieceFormat = True
 bclnDateEcheanceFormat = True
-bclnDateDernierPaiementFormat = True
+bclnDateDernierPaiementFormat = False
 # clean according to the consistence of the dates (piece < echeance and piece < dernierpaiement)
 bclnDateInconsistent = True
 # clean according to a maximal gap in month between dates
@@ -99,10 +99,10 @@ bclnMontantNonNegativeValue = True
 # clean according to being an non-zero value
 bclnMontantNonZeroValue = True
 # clean according to a minimal value of the montant
-bclnMontMinimalValue = True
+bclnMontMinimalValue = False
 clnMontMinimalValue = 1000
 # clean according to a maximal value of the montant
-bclnMontMaximalValue = True
+bclnMontMaximalValue = False
 clnMontMaximalValue = 1000000
 
 
