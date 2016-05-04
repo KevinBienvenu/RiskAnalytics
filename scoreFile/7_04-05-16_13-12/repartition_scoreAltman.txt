@@ -1,0 +1,8 @@
+name:repartition du scoreAltman
+xlabel:score
+ylabel:nombre d'entreprise
+typeyaxis:linear
+x:0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20
+y1:4419,9256,18623,19458,9422,3064,1078,470,225,92,49,30,28,22,12,18,8,10,6,5,109,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+name1:scoreAltman
+percent:True
