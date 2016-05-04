@@ -5,17 +5,37 @@ Created on 5 Apr 2016
 @author: Kévin Bienvenu
 
 '''
-
+import pandas as pd
+import numpy as np
 from PaiementDataExtraction import *
+from preprocess import PaiementDataExtraction
 
 # printConfiguration(False)
 
-importAndAnalyseCsv(True,False,ftp=True)
-# printLastGraphs()
+# importAndAnalyseCsv(True,False,ftp=True)
 
 
-# csvEtab = getCsvEtab(None)
+# csvEtab = FTPTools.retrieveFtplib("cameliaScores.csv.bz2", compression = "bz2", toPrint=True)
+# i=0
+# for line in csvEtab.values:
+#     print line
+#     i+=1
+#     if i>10:
+#         break
+# a = [0,1,np.nan,-3]
+# print sum([1 if b>0 or b<0 else 0 for b in a])
 
+
+# analyzingEntrepData(False)
+printLastGraphs("scoreFile")
+
+
+# p = pd.DataFrame(np.random.randint(0,10,size=(5,2)), columns=['1','2'])
+# q = pd.DataFrame(np.random.randint(0,10,size=(5,2)), columns=['1','4'])
+# 
+# print p
+# print q
+# print p.merge(q, on='1')
 
 
 

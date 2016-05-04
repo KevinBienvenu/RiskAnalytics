@@ -50,6 +50,9 @@ import math
 import os
 import time
 
+import plotly.plotly as py
+import plotly.graph_objs as go
+
 import Utils
 from preprocess import FTPTools
 import DrawingTools
@@ -109,9 +112,9 @@ def importFTPCsv(filename = 'cameliaBalAG.csv.gz',sep='\t',function="ftplib",use
     '''
     # importing the remote file
     if(function=="ckftp"):
-        csvinput = FTPTools.retrieveGZipCKFtp(filename, usecols, Constants.dtype)
+        csvinput = FTPTools.retrieveCKFtp(filename, usecols=usecols, dtype=Constants.dtype, compression="gz")
     elif(function=="ftplib"):
-        csvinput = FTPTools.retrieveGZipFtplib(filename, usecols, Constants.dtype)
+        csvinput = FTPTools.retrieveFtplib(filename, usecols=usecols, dtype=Constants.dtype, compression="gz")
     if csvinput is None:
         print "error : impossible to import the dataframe"
         return None
@@ -1444,32 +1447,25 @@ def analyzingIdCorresponding(csvinput, fileToCompare):
      
 ''' IV - Analysing functions using other files '''
     
-def getCsvEtab(csvinput, toSaveGraph = False):
-    usecols = ['etab_id','entrep_id','capital','DCREN','EFF_ENT']
+def getCsvEtab():
+    usecols = ['etab_id','entrep_id','capital','DCREN','EFF_ENT','adr_dep']
     dtype = {'etab_id':np.int32,'entrep_id':np.int32,'capital':np.int32,'DCREN':np.int32,'EFF_ENT':np.int32}
-    csvEtab = FTPTools.retrieveCsvFtplib("ProcessedData/notificationsProtocol.csv", toPrint=True)
+    csvEtab = FTPTools.retrieveFtplib("ProcessedData/notificationsProcol.csv", toPrint=True)
     return csvEtab
 
-def analyzingEntrepData(csvinput, csvEtab, toSaveGraph = False):
+def getCsvScores():
+    usecols = ['entrep_id','dateBilan','sourceModif','scoreSolv','scoreZ','scoreCH','scoreAltman']
+    csvScore = FTPTools.retrieveFtplib("cameliaScores.csv.bz2", compression = "bz2", usecols=usecols, toPrint=False)
+#     csvScore.set_index('entrep_id',inplace=True)
+    return csvScore
+
+def analyzingEntrepData(toSaveGraph = False):
     print "=== Starting Analysis of Entreprises Data ==="
     print ""
     
-    # first do the extraction of csvinput
-    if csvinput is None:
-        print "no result to analyse"
-        print ""
-        return
-    if not('entrep_id' in csvinput.columns):
-        print "wrong columns"
-        print ""
-        return
-    # importing column
-    column = csvinput['entrep_id'].values
-    if len(column) ==0 :
-        print "no result to analyse"
-        print ""
-        return
-    
+    startTime = time.time()
+    csvinput = importAndCleanCsv(True, ftp = True)
+    column = csvinput[['entrep_id','datePiece']].values
     # initializing variables
     #     setting size variables
     nbEntreprises = len(np.unique(column))
@@ -1477,40 +1473,122 @@ def analyzingEntrepData(csvinput, csvEtab, toSaveGraph = False):
     # initializing variables
     #    dictionary linking entrep_id to concerned rows
     entrepriseToRowsDict = {}
+    dicNbEntreprise = {}
     ind = 0
-    for entreprise in csvinput['entrep_id'].values:
-        if not entrepriseToRowsDict.has_key(entreprise):
-            entrepriseToRowsDict[entreprise] = []
-        entrepriseToRowsDict[entreprise].append(ind)
+    for entreprise in column:
+        if not entrepriseToRowsDict.has_key(entreprise[0]):
+            entrepriseToRowsDict[entreprise[0]] = []
+        entrepriseToRowsDict[entreprise[0]].append(entreprise[1][:4])
         ind += 1
-    # creating the new clean dataframe
-    entrepriseData = pd.DataFrame(columns=['numberOfBills','numberOfEtab','capital','dateCreation','effectif', 
-                                           'score1', 'score2','score3'], 
-                                  index=entrepriseToRowsDict.keys())
-    for entry in entrepriseToRowsDict.keys():
-        # entrepriseData = [numberOfBills, numberOfEtab, capital, dateCreation, effectif]
-        entrepriseData[entry] = [len(entrepriseToRowsDict[entry]),0,0,0,0,0,0,0]
-    entrepriseToRowsDict = {}
-    
-    print "extracting values of the Etab csv"
+    for entreprise in entrepriseToRowsDict:
+        dicNbEntreprise[entreprise] = [entreprise,len(entrepriseToRowsDict[entreprise]),min(entrepriseToRowsDict[entreprise]),max(entrepriseToRowsDict[entreprise])]
+    column = []
+    entrepriseData = pd.DataFrame.from_dict(dicNbEntreprise, orient='index')
+    entrepriseData.columns = ['entrep_id','nbBills','dateMin','dateMaxi']
+#     entrepriseData = []
+
+    ## IMPORTING SCORE DATA
+    print "importing the Score csv",
+    csvScore = getCsvScores()
+    print "... done:",
+    interval = time.time() - startTime
+    print interval, 'sec'
     print ""
-    column = csvEtab.values
-    for line in column:
-        print line
-        # line = ['etab_id','entrep_id','capital','DCREN','EFF_ENT'] 
-        if line[1] not in entrepriseData.keys():
-            continue
-        entrepriseData[line[1]]['numberOfEtab']+=1
-        entrepriseData[line[1]]['capital'] = max(int(line[2]), entrepriseData[line[1]]['capital'])
-        entrepriseData[line[1]]['dateCreation'] = int(line[3])
-        entrepriseData[line[1]]['effectif'] = max(int(line[4]), entrepriseData[line[1]]['effectif'])
-    # analyzing results
-    for t in ['numberOfBills','numberOfEtab','capital','effectif']:
-        print "= Analyzing",t
-        print "max:",np.max(entrepriseData[t])
-        print "min:",np.min(entrepriseData[t])
-        print "mean:",np.mean(entrepriseData[t])
-        print "median:",np.median(entrepriseData[t])
+    
+    # CLEANING THE DATAFRAME
+    print "cleaning the dataframe",
+    entrepriseData = entrepriseData.merge(csvScore, on="entrep_id")
+    entrepriseData = entrepriseData[entrepriseData.dateBilan.str[2:4]>=10]
+    entrepriseData = entrepriseData[entrepriseData.sourceModif=="bilans1"]
+    entrepriseData = entrepriseData[entrepriseData.dateBilan!="0000-00-00"]
+    del entrepriseData['sourceModif']
+    print "... done"
+    print ""
+
+
+    ## ANALYZING DATES CONSISTENCE
+    print "analyzing dates consistence"
+    for entreprise in dicNbEntreprise.keys():
+        dicNbEntreprise[entreprise].append(0)
+    for line in entrepriseData.values:
+#         print line[4][:4], line[3], line[2], line[4][:4]<=line[3] and line[4][:4]>=line[2]
+        if line[4][:4]<=line[3] and line[4][:4]>=int(line[2])-1:
+            dicNbEntreprise[int(line[0])][-1]+=1
+    for entreprise in dicNbEntreprise.keys():
+        dicNbEntreprise[entreprise][-1] = 100.0*dicNbEntreprise[entreprise][-1]/(int(dicNbEntreprise[entreprise][3])+1-int(dicNbEntreprise[entreprise][2]))
+    print "   percentage of scores:", 1.0*sum([a[-1] for a in dicNbEntreprise.values()])/len(dicNbEntreprise)
+    print ""
+    print ""
+    
+    ## CREATING HISTOGRAMS AND PRINTING STAT
+    print "computing histogram"
+    dicScore = {0:'scoreSolv', 1:'scoreZ',2:'scoreCH',3:'scoreAltman'}
+    maxis = np.max(entrepriseData,axis=0)
+    minis = np.min(entrepriseData,axis=0)
+    means = np.mean(entrepriseData,axis=0)
+    dicX = {}
+    dicY = {}
+    dicError = {}
+    nbStepHistogram = 50
+    for dic in dicScore.values():
+        print dic
+        print "   max:",maxis[dic]
+        print "   min:",minis[dic]
+        print "   mean:",means[dic]
+        print ""
+        if dic=="scoreZ":
+            minis[dic] = -20
+            maxis[dic] = 20
+        if dic=="scoreAltman":
+            minis[dic] = 0
+            maxis[dic] = 20
+        dicX[dic] = range(int(minis[dic]),int(maxis[dic])+1,max(1,int((maxis[dic]+1-minis[dic])/nbStepHistogram)))
+        dicY[dic] = [0] * nbStepHistogram
+        dicError[dic] = 0
+    p = 0
+    percent = 10
+    total = len(entrepriseData)
+    for line in entrepriseData.values:
+        p+=1
+        if 100.0*p/total>percent:
+            print percent,'%',
+            percent+=10
+        for dic in dicScore.keys():
+            i=0
+            try:
+#                 print len(dicX[dicScore[dic]])-1, dicX[dicScore[dic]][i+1], line[5+dic]
+                while i<len(dicX[dicScore[dic]])-1 and dicX[dicScore[dic]][i+1]<line[5+dic]:
+                    i+=1
+                dicY[dicScore[dic]][i]+=1   
+            except:
+                dicError[dicScore[dic]]+=1 
+    print ""
+    print "errors:", dicError
+    print ""   
+    
+    prepareInput("scoreFile")
+    for dic in dicScore.values():
+        DrawingTools.createHistogram(x=dicX[dic], y1=dicY[dic], name1=dic, xlabel="score", ylabel="nombre d'entreprise", percent=True, name="repartition du "+dic, filename="repartition_"+dic)   
+    
+    interval = time.time() - startTime
+    print "done: ", interval, 'sec'
+#     ## Analysis of Etab File
+#     for line in column:
+#         print line
+#         # line = ['etab_id','entrep_id','capital','DCREN','EFF_ENT'] 
+#         if line[1] not in entrepriseData.keys():
+#             continue
+#         entrepriseData[line[1]]['numberOfEtab']+=1
+#         entrepriseData[line[1]]['capital'] = max(int(line[2]), entrepriseData[line[1]]['capital'])
+#         entrepriseData[line[1]]['dateCreation'] = int(line[3])
+#         entrepriseData[line[1]]['effectif'] = max(int(line[4]), entrepriseData[line[1]]['effectif'])
+#     # analyzing results
+#     for t in ['numberOfBills','numberOfEtab','capital','effectif']:
+#         print "= Analyzing",t
+#         print "max:",np.max(entrepriseData[t])
+#         print "min:",np.min(entrepriseData[t])
+#         print "mean:",np.mean(entrepriseData[t])
+#         print "median:",np.median(entrepriseData[t])
     
     
     
@@ -1584,20 +1662,20 @@ def importAndAnalyseCsv(toPrint = False, toDrawGraph = True, ftp = False):
     print ""
     return csvinput
 
-def prepareInput():
+def prepareInput(filename="analysis"):
     """
     functions that prepare the directory to export the graph during the analyzing steps.
     -- IN
-    takes no arguments
+    filename : name of the directory to create (string) default : analysis
     -- OUT
     returns nothing
     """
-    os.chdir(os.path.join("..","..","analysis"))
+    os.chdir(os.path.join("..","..",filename))
     n = len(os.listdir("."))
     os.mkdir(str(n)+"_"+time.strftime('%d-%m-%y_%H-%M',time.localtime()))
     os.chdir(str(n)+"_"+time.strftime('%d-%m-%y_%H-%M',time.localtime())) 
     
-def printLastGraphs():
+def printLastGraphs(filename = "analysis"):
     """
     function that seek for all .txt files in the last folder of export and transform them
     into graph through plotly and export them in png.
@@ -1607,7 +1685,7 @@ def printLastGraphs():
     returns nothing
     """
     print "Printing graphs"
-    os.chdir(os.path.join("..","..","analysis"))
+    os.chdir(os.path.join("..","..",filename))
     lastdir = os.listdir(".")[-1]
     os.chdir(lastdir)
     dirs = os.listdir("../"+lastdir)

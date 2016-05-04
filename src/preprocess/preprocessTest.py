@@ -53,17 +53,17 @@ class TestFTPTools(unittest.TestCase):
     def testWrongInputFilename(self):
         ''' tests if the function returns None if wrong file name is given'''
         # if filename is None
-        self.assertEqual(retrieveGZipFtplib(None),None)
+        self.assertEqual(retrieveFtplib(None),None)
         # if filename has no extension
-        self.assertEqual(retrieveGZipFtplib("cameliaBalAG"),None)
+        self.assertEqual(retrieveFtplib("cameliaBalAG"),None)
         # if filename is no gzip compressed
-        self.assertEqual(retrieveGZipFtplib("cameliaLiensLinks.csv.bz2"), None)
+        self.assertEqual(retrieveFtplib("cameliaLiensLinks.csv.bz2"), None)
         # if filename is None
-        self.assertEqual(retrieveGZipFtplib(None),None)
+        self.assertEqual(retrieveFtplib(None),None)
         # if filename has no extension
-        self.assertEqual(retrieveGZipFtplib("cameliaBalAG"),None)
+        self.assertEqual(retrieveFtplib("cameliaBalAG"),None)
         # if filename is no gzip compressed
-        self.assertEqual(retrieveGZipFtplib("cameliaLiensLinks.csv.bz2"), None)
+        self.assertEqual(retrieveFtplib("cameliaLiensLinks.csv.bz2"), None)
 
 class TestDrawingTools(unittest.TestCase):
     '''
