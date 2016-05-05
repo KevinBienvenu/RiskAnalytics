@@ -99,11 +99,11 @@ bclnMontantNonNegativeValue = True
 # clean according to being an non-zero value
 bclnMontantNonZeroValue = True
 # clean according to a minimal value of the montant
-bclnMontMinimalValue = False
+bclnMontMinimalValue = True
 clnMontMinimalValue = 1000
 # clean according to a maximal value of the montant
-bclnMontMaximalValue = False
-clnMontMaximalValue = 1000000
+bclnMontMaximalValue = True
+clnMontMaximalValue = 500000
 
 
 ### CLEANING MONTANT LITIGE

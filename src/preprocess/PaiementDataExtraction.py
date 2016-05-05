@@ -1591,7 +1591,7 @@ def analyzingEntrepEtab(toSaveGraph = False):
             # array containing ['entrep_id',nbEtab,array(capital),array(dateCreation),array(effectif)]
             dicEntreprise[entreprise] = [entreprise,0,[],[],[]]
     
-    print "retrieving csvEtab file",
+    print "retrieving csvEtab file"
     csvEtab = getCsvEtab()
 #     entrepriseData = []
     print "... done:",
@@ -1600,22 +1600,23 @@ def analyzingEntrepEtab(toSaveGraph = False):
     print ""
     
     ## ANALYSIS AND JOINING
-    print "Analysing the file",
+    print "Analysing the file"
     nbNanCapital = 0
     nbNanDate = 0
     nbNanEffectif = 0
     total = len(csvEtab)
-    percent = 1
+    print total
+    percent = 0.1
     i = 0
     for line in csvEtab.values:
         i+=1
         if 100.0*i/total>percent:
-            print percent,"%",
-            percent+=1
-            if percent%10==0:
+            print percent,"%"
+            percent+=0.1
+            if int(percent*10.0)%10==0:
                 print ""
         # line = ['entrep_id','capital','DCREN','EFF_ENT','adr_dep'] 
-        if line[0] not in dicEntreprise.keys():
+        if line[0] not in dicEntreprise:
             continue
         # increasing number of Etablissment
         dicEntreprise[line[0]][1]+=1
