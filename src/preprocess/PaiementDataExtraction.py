@@ -54,7 +54,7 @@ import plotly.plotly as py
 import plotly.graph_objs as go
 
 import Utils
-from preprocess import FTPTools
+import FTPTools
 import DrawingTools
 import Constants
 from Constants import *
@@ -1448,9 +1448,8 @@ def analyzingIdCorresponding(csvinput, fileToCompare):
 ''' IV - Analysing functions using other files '''
     
 def getCsvEtab():
-    usecols = ['etab_id','entrep_id','capital','DCREN','EFF_ENT','adr_dep']
-    dtype = {'etab_id':np.int32,'entrep_id':np.int32,'capital':np.int32,'DCREN':np.int32,'EFF_ENT':np.int32}
-    csvEtab = FTPTools.retrieveFtplib("ProcessedData/notificationsProcol.csv", toPrint=True)
+    usecols = ['entrep_id','capital','DCREN','EFF_ENT']
+    csvEtab = FTPTools.retrieveFtplib("ProcessedData/cameliaEtabKevin.csv.gz", compression="gz",usecols=usecols,toPrint=True,sep=";")
     return csvEtab
 
 def getCsvScores():
@@ -1459,8 +1458,8 @@ def getCsvScores():
 #     csvScore.set_index('entrep_id',inplace=True)
     return csvScore
 
-def analyzingEntrepData(toSaveGraph = False):
-    print "=== Starting Analysis of Entreprises Data ==="
+def analyzingEntrepScore(toSaveGraph = False):
+    print "=== Starting Analysis of Entreprises Scores ==="
     print ""
     
     startTime = time.time()
@@ -1572,24 +1571,154 @@ def analyzingEntrepData(toSaveGraph = False):
     
     interval = time.time() - startTime
     print "done: ", interval, 'sec'
-#     ## Analysis of Etab File
-#     for line in column:
-#         print line
-#         # line = ['etab_id','entrep_id','capital','DCREN','EFF_ENT'] 
-#         if line[1] not in entrepriseData.keys():
-#             continue
-#         entrepriseData[line[1]]['numberOfEtab']+=1
-#         entrepriseData[line[1]]['capital'] = max(int(line[2]), entrepriseData[line[1]]['capital'])
-#         entrepriseData[line[1]]['dateCreation'] = int(line[3])
-#         entrepriseData[line[1]]['effectif'] = max(int(line[4]), entrepriseData[line[1]]['effectif'])
-#     # analyzing results
-#     for t in ['numberOfBills','numberOfEtab','capital','effectif']:
-#         print "= Analyzing",t
-#         print "max:",np.max(entrepriseData[t])
-#         print "min:",np.min(entrepriseData[t])
-#         print "mean:",np.mean(entrepriseData[t])
-#         print "median:",np.median(entrepriseData[t])
+
+def analyzingEntrepEtab(toSaveGraph = False):
+    print "=== Starting Analysis of Entreprises Etablissment ==="
+    print ""
+    startTime = time.time()
+    csvinput = importAndCleanCsv(True, ftp = True)
+    column = csvinput['entrep_id'].values
+    # initializing variables
+    #     setting size variables
+    nbEntreprises = len(np.unique(column))
+    print "enterprises number :" , nbEntreprises
+    print ""
+    # initializing variables
+    #    dictionary linking entrep_id to concerned rows
+    dicEntreprise = {}
+    for entreprise in column:
+        if not dicEntreprise.has_key(entreprise):
+            # array containing ['entrep_id',nbEtab,array(capital),array(dateCreation),array(effectif)]
+            dicEntreprise[entreprise] = [entreprise,0,[],[],[]]
     
+    print "retrieving csvEtab file",
+    csvEtab = getCsvEtab()
+#     entrepriseData = []
+    print "... done:",
+    interval = time.time() - startTime
+    print interval, 'sec'
+    print ""
+    
+    ## ANALYSIS AND JOINING
+    print "Analysing the file",
+    nbNanCapital = 0
+    nbNanDate = 0
+    nbNanEffectif = 0
+    total = len(csvEtab)
+    percent = 1
+    i = 0
+    for line in csvEtab.values:
+        i+=1
+        if 100.0*i/total>percent:
+            print percent,"%",
+            percent+=1
+            if percent%10==0:
+                print ""
+        # line = ['entrep_id','capital','DCREN','EFF_ENT','adr_dep'] 
+        if line[0] not in dicEntreprise.keys():
+            continue
+        # increasing number of Etablissment
+        dicEntreprise[line[0]][1]+=1
+        # adding info about capital
+        if str(line[1])!="nan":
+            dicEntreprise[line[0]][2].append(int(line[1]))
+        else:
+            nbNanCapital+=1
+        # adding info about dateCreation
+        if str(line[2])!="nan":
+            dicEntreprise[line[0]][3].append(line[2])
+        else:
+            nbNanDate+=1
+        # adding info about effectif
+        if str(line[3])!="nan":
+            dicEntreprise[line[0]][4].append(int(line[3]))
+        else:
+            nbNanEffectif+=1
+    print "...done"
+    print ""
+    print "number of Nan capital:",nbNanCapital
+    print "number of Nan date:",nbNanDate
+    print "number of Nan effectif:",nbNanEffectif
+    
+    ## ANALYSING CONSISTENCY
+    nbNoInfo = 0
+    nbInconsistentCapital = 0
+    nbInconsistentDate = 0
+    nbInconsistentEffectif = 0
+    print "Consistency analysis",
+    for entreprise in dicEntreprise.keys():
+        if dicEntreprise[entreprise][1] == 0:
+            nbNoInfo+=1
+            continue
+        if len(np.unique(dicEntreprise[entreprise][2]))>1:
+            nbInconsistentCapital+=1
+        dicEntreprise[entreprise][2] = np.max(dicEntreprise[entreprise][2])
+        if len(np.unique(dicEntreprise[entreprise][3]))>1:
+            nbInconsistentDate+=1
+        dicEntreprise[entreprise][4] = np.min(dicEntreprise[entreprise][4])
+        if len(np.unique(dicEntreprise[entreprise][4]))>1:
+            nbInconsistentEffectif+=1
+        dicEntreprise[entreprise][4] = np.max(dicEntreprise[entreprise][4])
+    print "...done"
+    print "   nb of missing entreprises:",100.0*nbNoInfo/len(dicEntreprise),"%"
+    print "   nb of inconsistent capital:",100.0*nbInconsistentCapital/len(dicEntreprise),"%"
+    print "   nb of inconsistent date:",100.0*nbInconsistentDate/len(dicEntreprise),"%"
+    print "   nb of inconsistent effectif:",100.0*nbInconsistentEffectif/len(dicEntreprise),"%"
+    print ""
+    
+    print "computing analysis",
+    # initializing arrays
+    dateX = range(1990,2016)
+    dateY = [0]*len(dateX)
+    capitalX = range(0,12)
+    capitalY = [0]*len(capitalX)
+    effectifX = range(0,6)
+    effectifY = [0]*len(effectifX)
+    nbDateError = 0
+    for entreprise in dicEntreprise.keys():
+        # handling capitals
+        i=0
+        capital = dicEntreprise[entreprise][2]
+        while i<len(capitalX)-1 and capital>10**(capitalX[i]):
+            i+=1
+        capitalY[i]+=1
+        # handling dates
+        i=0
+        try:
+            date = int(dicEntreprise[entreprise][3][:4])
+            print date
+            while i<len(dateX)-1 and date>dateX[i]:
+                i+=1
+            dateY[i]+=1
+        except:
+            nbDateError+=1
+            pass
+        # handling effectifs
+        i=0
+        effectif = dicEntreprise[entreprise][4]
+        while i<len(effectifX)-1 and effectif>10**(effectifX[i]):
+            i+=1
+        effectifY[i]+=1
+    # handling output 
+    prepareInput("etabFile")
+    DrawingTools.createHistogram(x=capitalX,y1=capitalY,percent=True,
+                                 xlabel="capitals",ylabel="number of entreprise (%)",
+                                 name="Repartition of the capitals",
+                                 filename="01_repartitionCapital")
+    DrawingTools.createHistogram(x=dateX,y1=dateY,percent=True,
+                                 xlabel="dates",ylabel="number of entreprise (%)",
+                                 name="Repartition of the dates",
+                                 filename="01_repartitionDate")
+    DrawingTools.createHistogram(x=effectifX,y1=effectifY,percent=True,
+                                 xlabel="effectifs",ylabel="number of entreprise (%)",
+                                 name="Repartition of the effectifs",
+                                 filename="01_repartitionEffectif")
+    print "...done"
+    print "nb Date Error:",nbDateError
+    print ""
+    
+    interval = time.time() - startTime
+    print "done: ", interval, 'sec'
     
     
     

@@ -26,7 +26,7 @@ import StringIO
 from cStringIO import StringIO as cS
 
 from ftplib import FTP_TLS
-# from chilkat import CkFtp2, CkByteData
+from chilkat import CkFtp2, CkByteData
 
 import pandas as pd
 
@@ -64,7 +64,7 @@ def getAccount():
         return (None, None, None, None)
     
     
-def retrieveFtplib(filename, compression = None, usecols=None, dtype=None, toPrint = False):
+def retrieveFtplib(filename, compression = None, usecols=None, dtype=None, toPrint = False, sep="\t"):
     """
     function that connects to the remote FTP serveur and extract a pandas dataframe
     the downloaded file must be compressed through gzip and containing a csv file.
@@ -146,7 +146,7 @@ def retrieveFtplib(filename, compression = None, usecols=None, dtype=None, toPri
     else:
         results = sio
     # extracting the file into a pandas dataframe
-    db = pd.read_csv(results,sep="\t", usecols = usecols)
+    db = pd.read_csv(results,sep=sep, usecols = usecols)
     sio.close()
 #     try:
 #         db = pd.read_csv(results,sep="\t", usecols = usecols, dtype = dtype)

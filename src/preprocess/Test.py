@@ -8,7 +8,7 @@ Created on 5 Apr 2016
 import pandas as pd
 import numpy as np
 from PaiementDataExtraction import *
-from preprocess import PaiementDataExtraction
+
 
 # printConfiguration(False)
 
@@ -26,8 +26,11 @@ from preprocess import PaiementDataExtraction
 # print sum([1 if b>0 or b<0 else 0 for b in a])
 
 
-# analyzingEntrepData(False)
-printLastGraphs("scoreFile")
+# analyzingEntrepScore(False)
+# printLastGraphs("scoreFile")
+
+analyzingEntrepEtab(False)
+# printLastGraphs("etabFile")
 
 
 # p = pd.DataFrame(np.random.randint(0,10,size=(5,2)), columns=['1','2'])
