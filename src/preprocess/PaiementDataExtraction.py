@@ -1676,7 +1676,7 @@ def analyzingEntrepEtab(toSaveGraph = False):
     
     print "computing analysis",
     # initializing arrays
-    dateX = range(1990,2016)
+    dateX = range(1950,2016)
     dateY = [0]*len(dateX)
     capitalX = range(0,12)
     capitalY = [0]*len(capitalX)
