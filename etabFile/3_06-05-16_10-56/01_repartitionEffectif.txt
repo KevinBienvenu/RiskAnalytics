@@ -1,0 +1,8 @@
+name:Repartition of the effectifs
+xlabel:effectifs
+ylabel:number of entreprise (%)
+typeyaxis:linear
+x:0,1,2,3,4,5
+y1:290450,264395,110491,14685,2672,18354
+name1:
+percent:True

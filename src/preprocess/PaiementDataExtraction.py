@@ -1606,32 +1606,33 @@ def analyzingEntrepEtab(toSaveGraph = False):
     nbNanEffectif = 0
     total = len(csvEtab)
     print total
-    percent = 0.1
+    percent = 1
     i = 0
     for line in csvEtab.values:
         i+=1
         if 100.0*i/total>percent:
-            print percent,"%"
-            percent+=0.1
-            if int(percent*10.0)%10==0:
+            print percent,"%",
+            percent+=1
+            if int(percent)%10==0:
                 print ""
-        # line = ['entrep_id','capital','DCREN','EFF_ENT','adr_dep'] 
+        # line = ['entrep_id','capital','DCREN','EFF_ENT'] 
         if line[0] not in dicEntreprise:
             continue
         # increasing number of Etablissment
         dicEntreprise[line[0]][1]+=1
         # adding info about capital
-        if str(line[1])!="nan":
+        if str(line[1]).lower()!="nan":
             dicEntreprise[line[0]][2].append(int(line[1]))
         else:
             nbNanCapital+=1
         # adding info about dateCreation
-        if str(line[2])!="nan":
+        if str(line[2]).lower()!="nan":
             dicEntreprise[line[0]][3].append(line[2])
+            print line[2]
         else:
             nbNanDate+=1
         # adding info about effectif
-        if str(line[3])!="nan":
+        if str(line[3]).lower()!="nan":
             dicEntreprise[line[0]][4].append(int(line[3]))
         else:
             nbNanEffectif+=1
@@ -1646,21 +1647,27 @@ def analyzingEntrepEtab(toSaveGraph = False):
     nbInconsistentCapital = 0
     nbInconsistentDate = 0
     nbInconsistentEffectif = 0
+    nbConsistencyError = 0
     print "Consistency analysis",
     for entreprise in dicEntreprise.keys():
-        if dicEntreprise[entreprise][1] == 0:
-            nbNoInfo+=1
-            continue
-        if len(np.unique(dicEntreprise[entreprise][2]))>1:
-            nbInconsistentCapital+=1
-        dicEntreprise[entreprise][2] = np.max(dicEntreprise[entreprise][2])
-        if len(np.unique(dicEntreprise[entreprise][3]))>1:
-            nbInconsistentDate+=1
-        dicEntreprise[entreprise][4] = np.min(dicEntreprise[entreprise][4])
-        if len(np.unique(dicEntreprise[entreprise][4]))>1:
-            nbInconsistentEffectif+=1
-        dicEntreprise[entreprise][4] = np.max(dicEntreprise[entreprise][4])
+        try:
+            if dicEntreprise[entreprise][1] == 0:
+                nbNoInfo+=1
+                continue
+            if len(np.unique(dicEntreprise[entreprise][2]))>1:
+                nbInconsistentCapital+=1
+            dicEntreprise[entreprise][2] = np.max(dicEntreprise[entreprise][2])
+            if len(np.unique(dicEntreprise[entreprise][3]))>1:
+                nbInconsistentDate+=1
+            dicEntreprise[entreprise][3] = np.unique(dicEntreprise[entreprise][3])[0]
+            if len(np.unique(dicEntreprise[entreprise][4]))>1:
+                nbInconsistentEffectif+=1
+            dicEntreprise[entreprise][4] = np.max(dicEntreprise[entreprise][4])
+        except:
+            nbConsistencyError+=1
+            pass
     print "...done"
+    print "   nb of problems:",nbConsistencyError
     print "   nb of missing entreprises:",100.0*nbNoInfo/len(dicEntreprise),"%"
     print "   nb of inconsistent capital:",100.0*nbInconsistentCapital/len(dicEntreprise),"%"
     print "   nb of inconsistent date:",100.0*nbInconsistentDate/len(dicEntreprise),"%"
@@ -1686,8 +1693,9 @@ def analyzingEntrepEtab(toSaveGraph = False):
         # handling dates
         i=0
         try:
-            date = int(dicEntreprise[entreprise][3][:4])
-            print date
+            date = dicEntreprise[entreprise][3][:4]
+#             print date
+            date = int(date)
             while i<len(dateX)-1 and date>dateX[i]:
                 i+=1
             dateY[i]+=1
@@ -1697,6 +1705,7 @@ def analyzingEntrepEtab(toSaveGraph = False):
         # handling effectifs
         i=0
         effectif = dicEntreprise[entreprise][4]
+        print effectif
         while i<len(effectifX)-1 and effectif>10**(effectifX[i]):
             i+=1
         effectifY[i]+=1

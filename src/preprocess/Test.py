@@ -29,8 +29,8 @@ from PaiementDataExtraction import *
 # analyzingEntrepScore(False)
 # printLastGraphs("scoreFile")
 
-analyzingEntrepEtab(False)
-# printLastGraphs("etabFile")
+# analyzingEntrepEtab(False)
+printLastGraphs("etabFile")
 
 
 # p = pd.DataFrame(np.random.randint(0,10,size=(5,2)), columns=['1','2'])

@@ -26,7 +26,7 @@ import StringIO
 from cStringIO import StringIO as cS
 
 from ftplib import FTP_TLS
-from chilkat import CkFtp2, CkByteData
+# from chilkat import CkFtp2, CkByteData
 
 import pandas as pd
 

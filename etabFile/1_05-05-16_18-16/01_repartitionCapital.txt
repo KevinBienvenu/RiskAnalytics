@@ -1,0 +1,8 @@
+name:Repartition of the capitals
+xlabel:capitals
+ylabel:number of entreprise (%)
+typeyaxis:linear
+x:0,1,2,3,4,5,6,7,8,9,10,11
+y1:204263,167,1385,18500,182938,164586,100340,22465,5263,992,128,20
+name1:
+percent:True
