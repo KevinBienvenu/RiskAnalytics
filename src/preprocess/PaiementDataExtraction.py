@@ -1942,6 +1942,7 @@ def printLastGraphs(filename = "analysis"):
     print "Printing graphs"
     os.chdir(os.path.join("..","..",filename))
     lastdir = os.listdir(".")[-1]
+    print lastdir
     os.chdir(lastdir)
     dirs = os.listdir("../"+lastdir)
     for direct in dirs:

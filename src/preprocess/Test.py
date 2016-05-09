@@ -26,10 +26,10 @@ from PaiementDataExtraction import *
 # print sum([1 if b>0 or b<0 else 0 for b in a])
 
 
-analyzingEntrepScore()
+# analyzingEntrepScore()
 # printLastGraphs("scoreFile")
 
-# analyzingEntrepEtab()
+analyzingEntrepEtab()
 # printLastGraphs("etabFile")
 
 
