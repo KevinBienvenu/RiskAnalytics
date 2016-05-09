@@ -35,21 +35,6 @@ class TestFTPTools(unittest.TestCase):
         ftp.connect(host,port)
         ftp.login(user,password)
         
-    def testCkFTPConnection(self):
-        ''' tests if the chilkat connection is available with the FTP server '''
-        ftp = CkFtp2()
-        (user, password, host, port) = getAccount()
-        # connecting and logging in
-        ftp.put_Passive(True)
-        ftp.put_Hostname(host)
-        ftp.put_Port(port)
-        ftp.put_Username(user)
-        ftp.put_Password(password)
-        ftp.put_AuthTls(True)
-        ftp.put_Ssl(False)
-        ftp.put_SslProtocol("TLS 1.2")
-        self.assertTrue(ftp.Connect(), "connection impossible")
-    
     def testWrongInputFilename(self):
         ''' tests if the function returns None if wrong file name is given'''
         # if filename is None
@@ -57,13 +42,9 @@ class TestFTPTools(unittest.TestCase):
         # if filename has no extension
         self.assertEqual(retrieveFtplib("cameliaBalAG"),None)
         # if filename is no gzip compressed
-        self.assertEqual(retrieveFtplib("cameliaLiensLinks.csv.bz2"), None)
-        # if filename is None
         self.assertEqual(retrieveFtplib(None),None)
         # if filename has no extension
         self.assertEqual(retrieveFtplib("cameliaBalAG"),None)
-        # if filename is no gzip compressed
-        self.assertEqual(retrieveFtplib("cameliaLiensLinks.csv.bz2"), None)
 
 class TestDrawingTools(unittest.TestCase):
     '''

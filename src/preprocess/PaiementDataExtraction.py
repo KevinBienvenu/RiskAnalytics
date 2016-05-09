@@ -7,65 +7,56 @@ Created on 5 Apr 2016
 Module containing functions extracting informations from the
 file 'cameliaBalAG.csv' 
 
-The module is divided in three parts :
-
-=== Part I : Importation of the data
-importCsv(filename,sep,usecols,addPaidBill) : import a local csv file into a pandas.Dataframe 
-importFTPCsv(filename,sep,function,usecols,addPaidBill) : import a remote csv.gz file into a pandas.Dataframe
+=== Part I : Import of the data
+        Imports and functions that get files and extract dataframe out of csv files
 
 === Part II : Cleaning Functions
-cleaningEntrepId(csvinput, toPrint) : clean the dataframe according to the EntrepId column
-cleaningDates(csvinput, toPrint) : clean the dataframe according to the dates columns
-cleaningMontant(csvinput, toPrint) : clean the dataframe according to the montantPieceEur column
-cleaningOther(csvinput, toPrint) : clean the dataframe according to the other columns
+        Functions that clean the BalAG file according to different columns
 
 === Part III - Analysing Functions
-analyzingEntrepId(csvinput, toSaveGraph, toDrawGraphOld) : analyzes and draws graphs about the EntrepId column
-analyzingDates(csvinput, toSaveGraph, toDrawGraphOld) : analyzes and draws graphs about the dates columns
-analyzingMontant(csvinput, toSaveGraph, toDrawGraphOld) : analyzes and draws graphs about the montantPieceEur column
-analysingOther(csvinput, toSaveGraph, toDrawGraphOld) : analyzes and draws graphs about the other columns
-analysingComplete(csvinput, toSaveGraph, toDrawGraphOld) : analyzes and draws graphs about all the columns
-analysingIdCorresponding(csvinput, fileToCompare) : compares the EntrepId column to another file of the database
+        Functions that analyze and compute statistics and graphs of the BalAG file
 
-=== PART IV - Analysing functions using other files
+=== Part IV - Analysing functions using other files
+        Functions that use the files 'Score' and 'Etab' to perform compared analysis
 
-
-=== PART V - Scripts and Global Functions
-importAndCleanCsv(toPrint, ftp) : imports the local or remote file and cleans it
-importAndAnalyseCsv(toPrint, todoAnalysis, toDrawGraph, ftp) : imports, cleans and analyzes the csv file
-prepareDirForGraphExport() : prepare the directories to export the graph from the analysis
-printLastGraphs() : transforms the last export of graphs from .txt to .png
-sideAnalysis(ftp) : compare the csv file to other files on the ftp server
-
-
-
+=== Part V - Creating 2d histograms
+        Functions that computes useful crossed-analysis
+        
+=== Part VI - Scripts and Global Functions
+        Functions and pipelines of global analysis function
 '''
 
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
+
+''' I - Import of the data  '''
+
 import datetime
 import math
 import os
 import time
 
-import plotly.plotly as py
-import plotly.graph_objs as go
-
-import Utils
-import FTPTools
-import DrawingTools
 import Constants
-from Constants import *
+import DrawingTools
+import FTPTools
+import Utils
+import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from Constants import bclnIdIntFormat, bclnIdMinimalBillsNumber, \
+    clnIdMinimalBillsNumber, bclnIdMinimalIdValue, clnIdMinimalIdValue, \
+    bclnIdMaximalIdValue, clnIdMaximalIdValue, bclnDatePieceFormat, \
+    bclnDateEcheanceFormat, bclnDateDernierPaiementFormat, bclnDateInconsistent, \
+    bclnDateMonthDiff, clnDateMonthDiff, bclnDateMinimalDate, clnDateMinimalDate, \
+    bclnDateMaximalDate, clnDateMaximalDate, bclnMontantIntFormat, \
+    bclnMontantNonNegativeValue, bclnMontantNonZeroValue, bclnMontMinimalValue, \
+    clnMontMinimalValue, bclnMontMaximalValue, clnMontMaximalValue, \
+    bclnMontantLitigeNonZero
 
 
-
-''' I - Importation of the data  '''
 def importCsv(filename = 'cameliaBalAG_extraitRandom.csv',sep='\t',usecols = None,addPaidBill = False):
     '''
-    function that imports the content of the csv file into the global
-    variable csvinput. The csv file must be stored stored locally.
+    function that imports the content of the csv file. 
+    The csv file must be stored stored locally.
     -- IN
     filename : name of the file, including the extension (string) default : 'cameliaBalAG_extraitRandom.csv'
     sep : separator for the pandas read_csv function (regexp) default : '\t'
@@ -103,7 +94,6 @@ def importFTPCsv(filename = 'cameliaBalAG.csv.gz',sep='\t',usecols = None,addPai
     -- IN
     filename : name of the file, including the extension (string) default : 'cameliaBalAG.csv.gz'
     sep : separator for the pandas read_csv function (regexp) default : '\t'
-    function : name of the importation function to be used "ckftp" or "ftplib" (string) default : "ftplib"
     usecols : array containing the names of the column we want to import, 
         if None import all (string[] or None) default : None
     addPaidBill : boolean that settles if we add a column PaidBill (boolean) default : False
@@ -125,6 +115,40 @@ def importFTPCsv(filename = 'cameliaBalAG.csv.gz',sep='\t',usecols = None,addPai
                 paidBill.append(not row == "0000-00-00")            
             csvinput['paidBill'] = pd.Series(paidBill, index=csvinput.index)
     return csvinput
+
+def getCsvEtab(csvinput=None):
+    '''
+    function that imports the Etab file from the remote ftp server
+    if csvinput is not None, it then deletes useless rows
+    --IN:
+    csvinput : pandas.Dataframe which at least 'entrep_id' in columns (pandas.dataframe) default = None
+    -- OUT:
+    csvEtab : pandas.Dataframe containing the file Etab.
+    '''
+    usecols = ['entrep_id','capital','DCREN','EFF_ENT']
+    # importing the file
+    csvEtab = FTPTools.retrieveFtplib("ProcessedData/cameliaEtabKevin.csv.gz", compression="gz",usecols=usecols,toPrint=False,sep=";")
+    if csvinput is None:
+        return csvEtab
+    # removing useless rows if csvinput is not None
+    rowToDrop = []
+    column = csvinput['entrep_id']
+    i = 0
+    total = len(csvEtab)
+    print "processing csvEtab",
+    for line in csvEtab.values:
+        if not line[0] in column:
+            rowToDrop.append(i)
+        i+=1
+    csvEtab.drop(csvEtab.index[rowToDrop], inplace = True)
+    print "done :",len(rowToDrop),"removed rows -",100.0*len(rowToDrop)/total,"%"
+    return csvEtab
+
+def getCsvScores():
+    usecols = ['entrep_id','dateBilan','sourceModif','scoreSolv','scoreZ','scoreCH','scoreAltman']
+    csvScore = FTPTools.retrieveFtplib("cameliaScores.csv.bz2", compression = "bz2", usecols=usecols, toPrint=False)
+#     csvScore.set_index('entrep_id',inplace=True)
+    return csvScore
 
 
 ''' II - Cleaning Functions '''
@@ -1443,17 +1467,6 @@ def analyzingIdCorresponding(csvinput, fileToCompare):
     print ""
      
 ''' IV - Analysing functions using other files '''
-    
-def getCsvEtab():
-    usecols = ['entrep_id','capital','DCREN','EFF_ENT']
-    csvEtab = FTPTools.retrieveFtplib("ProcessedData/cameliaEtabKevin.csv.gz", compression="gz",usecols=usecols,toPrint=False,sep=";")
-    return csvEtab
-
-def getCsvScores():
-    usecols = ['entrep_id','dateBilan','sourceModif','scoreSolv','scoreZ','scoreCH','scoreAltman']
-    csvScore = FTPTools.retrieveFtplib("cameliaScores.csv.bz2", compression = "bz2", usecols=usecols, toPrint=False)
-#     csvScore.set_index('entrep_id',inplace=True)
-    return csvScore
 
 def analyzingEntrepScore():
     print "=== Starting Analysis of Entreprises Scores ==="
@@ -1845,11 +1858,95 @@ def analyzingEntrepEtab():
     
     interval = time.time() - startTime
     print "done: ", interval, 'sec'
-    
-    
-    
-             
-''' V - Scripts and Global Functions '''
+      
+''' V - Creating 2d histograms '''
+      
+def AnalyzingEcheanceOverMontant(csvinput):
+    '''
+    function that computes 2d hist seeing how variables are correlated.
+    -- IN:
+    csvinput : the BalAG file cleaned with at least the columns 'entrep_id','montantPieceEur','datePiece','dateEcheance'
+#     csvetab : the Etab file with at least the columns 'entrep_id','DCREN','effectif','capital'
+#     csvscore : the Score file with at least the columns 'entrep_id','dateModif','scoreZ','scoreCH','scoreSolv','scoreAltman'
+    -- OUT:
+    the function returns nothing
+    '''    
+    print "analyzing montant over echeance"
+    # setting the array for drawing the histogram
+    y0 = []
+    y1 = []
+    ya = []
+    yb = []
+    nbError = 0
+    nbLine = len(csvinput)
+    print nbLine
+    percent = 10
+    i = 0
+    for line in csvinput[['montantPieceEur','datePiece','dateEcheance']].values:
+        i+=1
+        if 100.0*i/nbLine>percent:
+            print percent,"%",
+            percent+=10 
+        try :
+            d0 = datetime.datetime.strptime(line[1], '%Y-%m-%d').date()
+            d1 = datetime.datetime.strptime(line[2], '%Y-%m-%d').date()
+            a = line[0]
+            b = (d1-d0).days
+            y0.append(a)
+            y1.append(b)
+            if a < 100000 and b < 100:
+                ya.append(a)
+                yb.append(b)
+        except:
+            nbError += 1
+    print ""
+    print "... done"
+    print ""
+    print "nb errors :",100.0*nbError/nbLine
+    print ""
+    DrawingTools.createHistogram2D(y0=y0, y1=y1, xlabel="montant facture", ylabel="nombre de jours d'échéance", name="Echéance selon Montant", filename="01_montant_echeance")
+    DrawingTools.createHistogram2D(y0=ya, y1=yb, xlabel="montant facture", ylabel="nombre de jours d'échéance", name="Echéance selon Montant", filename="01_montant_echeance_zoom")
+            
+def AnalyzingEffectifOverCapital(csvetab):
+    '''
+    function that computes 2d hist seeing how variables are correlated.
+    -- IN:
+    csvetab : the Etab file with at least the columns 'entrep_id','DCREN','effectif','capital'
+    -- OUT:
+    the function returns nothing
+    '''    
+    y0 = []
+    y1 = []
+    ya = []
+    yb = []
+    nbError = 0
+    percent = 10
+    i=0
+    total = len(csvetab)
+    for line in csvetab[['EFF_ENT','capital']].values:
+        i+=1
+        if 100.0*i/total>percent:
+            print percent,"%",
+            percent+=10
+        try:
+            a = int(line[1])
+            b = int(line[0])
+            y0.append(a)
+            y1.append(b)
+            if a>0 and b>0:
+                ya.append(a)
+                yb.append(b)
+        except:
+            nbError += 1
+    print ""
+    print "... done"
+    print ""
+    print "nbError :",100.0*nbError/total
+    print ""
+    DrawingTools.saveHistogram2D(y0=y0, y1=y1, xlabel="capital", ylabel="effectif", name="Effectif selon capital (complet)", filename="02_effectif_over_capital")
+    DrawingTools.saveHistogram2D(y0=ya, y1=yb, xlabel="capital", ylabel="effectif", name="Effectif selon capital (nettoyé)", filename="02_effectif_over_capital_clean")
+          
+''' VI - Scripts and Global Functions '''
 def importAndCleanCsv(toPrint = False, ftp = False):
     '''
     Function that process the data:
@@ -1947,11 +2044,14 @@ def printLastGraphs(filename = "analysis"):
     dirs = os.listdir("../"+lastdir)
     for direct in dirs:
         tab = direct.split(".")
-        if(tab[1]=="txt"):
+        if tab[1]=="txt":
             print direct,
             DrawingTools.drawHistogramFromFile(tab[0]) 
             print "...done"
-            #     os.chdir(os.path.join("..","src","preprocess"))
+        elif tab[1]=="hist2d":
+            print direct,
+            DrawingTools.drawHistogramFromFile(tab[0],typeHist="2d") 
+            print "...done"
 
 def printConfiguration(globalConfig = False):
     '''

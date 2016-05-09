@@ -222,15 +222,47 @@ def saveHistogram(x,
             Utils.drawArray(openfile, y3, "y3")
             openfile.write("name3:"+name3+"\n")
 
-def drawHistogramFromFile(filename):
+def saveHistogram2D(y0,
+                  y1,
+                  xlabel="",
+                  ylabel="",
+                  name="Graphe Sans Titre",
+                  filename="untitledPlot"):
+    """
+    Function that stores locally an 2d histogram in a txt file
+    to be drawn later.
+    -- IN
+    y0 : data to plot on the x-axis in an array (int[])
+    y1: data to plot ont the y-axis in an array (int[]) (must be same size as y0)
+    xlabel : name of the x-axis (string) default = ""
+    ylabel : name of the y-axis (string) default = ""
+    name : name of the graph (string) default = "Graphe Sans Titre"
+    filename : name of the file where to store the final image of the graph, name whithout the extension (string) default = "untitledPlot"
+    -- OUT
+    returns nothing
+    """
+    print filename
+    with open(filename+".hist2d", 'w') as openfile:
+        openfile.write("name:"+name+"\n")
+        openfile.write("xlabel:"+xlabel+"\n")
+        openfile.write("ylabel:"+ylabel+"\n")
+        Utils.drawArray(openfile, y0, "y0")
+        Utils.drawArray(openfile, y1, "y1")
+        openfile.write("name:"+name+"\n")
+
+def drawHistogramFromFile(filename, typeHist="bars"):
     """
     Function that open the file filename that should contain histogram data
     and draw it using the function drawHistogram
     -- IN
     filename: the name of the file whithout the extention (string)
+    typeHist: string in ("bars","2D") precising the type of hist to draw (string) default = "bars"
     -- OUT
     return nothing
     """
+    x=None
+    y0=None
+    y1=None
     y2=None
     y3=None
     name1=""
@@ -241,12 +273,19 @@ def drawHistogramFromFile(filename):
     percent = False
     typeyaxis="linear"
     name="Graphe Sans Titre"
-    with open(filename+".txt", 'r') as openfile:
+    if typeHist=="bars":
+        fn = filename+".txt"
+    elif typeHist=="2d":
+        fn = filename+".hist2d"
+            
+    with open(fn, 'r') as openfile:
         lines = openfile.readlines()
         for line in lines:
             tab = line.split(":")
             if tab[0] == "x":
                 x = [i if len(str(i))==0 or str(i)[0]!="'" else i[1:len(i)-1] for i in tab[1].split(",")]
+            if tab[0] == "y0":
+                y0 = [i if len(str(i))==0 or str(i)[0]!="'" else i[1:len(i)-1] for i in tab[1].split(",")]
             if tab[0] == "y1":
                 y1 = [i if len(str(i))==0 or str(i)[0]!="'" else i[1:len(i)-1] for i in tab[1].split(",")]
             if tab[0] == "y2":
@@ -269,19 +308,19 @@ def drawHistogramFromFile(filename):
                 typeyaxis = tab[1]
             if tab[0] == "percent":
                 percent = tab[1][:4]=="True"
-    drawHistogram(x=x, y1=y1, y2=y2, y3=y3, 
-                  name1=name1, name2=name2, name3=name3, 
-                  xlabel=xlabel, ylabel=ylabel, percent=percent,
-                  typeyaxis=typeyaxis, name=name, filename=filename)
- 
-''' unused and non-tested functions '''  
+    
+    if typeHist=="bars":
+        drawHistogram(x=x, y1=y1, y2=y2, y3=y3, 
+                      name1=name1, name2=name2, name3=name3, 
+                      xlabel=xlabel, ylabel=ylabel, percent=percent,
+                      typeyaxis=typeyaxis, name=name, filename=filename)
+    elif typeHist=="2d":
+        createHistogram2D(y0=y0, y1=y1,
+                          xlabel = xlabel, ylabel = ylabel,
+                          name = name, filename = filename)
            
 def createHistogram2D(y0,
                       y1,
-                      color0=Constants.colorBluePlotly,
-                      color1=Constants.colorOrangePlotly,
-                      name1="",
-                      name2="",
                       xlabel="",
                       ylabel="",
                       name="Graphe Sans Titre",

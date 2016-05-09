@@ -29,9 +29,14 @@ from PaiementDataExtraction import *
 # analyzingEntrepScore()
 # printLastGraphs("scoreFile")
 
-analyzingEntrepEtab()
+# analyzingEntrepEtab()
 # printLastGraphs("etabFile")
 
+# csvinput = importAndCleanCsv()
+# csvEtab = getCsvEtab(csvinput)
+# prepareInput("hist2d")
+# AnalyzingEffectifOverCapital(csvEtab)
+printLastGraphs("hist2d")
 
 # p = pd.DataFrame(np.random.randint(0,10,size=(5,2)), columns=['1','2'])
 # q = pd.DataFrame(np.random.randint(0,10,size=(5,2)), columns=['1','4'])

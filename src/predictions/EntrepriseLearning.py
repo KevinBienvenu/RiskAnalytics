@@ -115,7 +115,7 @@ def outOfNowhere(cumm,val):
     
      
 
-csvinput = PaiementDataExtraction.importCleaningCsv(False, False, False)
+csvinput = PaiementDataExtraction.importAndCleanCsv(ftp=False)
 # entrep_id = extractMostRepresentedEntreprise(csvinput)
 # csvinput = importEntreprise(csvinput, entrep_id)
 
@@ -136,7 +136,6 @@ probdelai = [1.0*i/total for i in probdelai]
 cummdelai = [np.sum([j for j in probdelai[:i+1]]) for i in range(len(probdelai))]
 
 print cummdelai
-
 
 trainX = X[:nbEntriesTraining]
 testX = X[nbEntriesTraining:]
