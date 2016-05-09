@@ -95,7 +95,7 @@ def importCsv(filename = 'cameliaBalAG_extraitRandom.csv',sep='\t',usecols = Non
     os.chdir(os.path.join("src","preprocess"))
     return csvinput
 
-def importFTPCsv(filename = 'cameliaBalAG.csv.gz',sep='\t',function="ftplib",usecols = None,addPaidBill = False):
+def importFTPCsv(filename = 'cameliaBalAG.csv.gz',sep='\t',usecols = None,addPaidBill = False):
     '''
     function that imports the content of the csv file into the global
     variable csvinput. the file is downloaded from the remote ftp via
@@ -111,10 +111,7 @@ def importFTPCsv(filename = 'cameliaBalAG.csv.gz',sep='\t',function="ftplib",use
     returns the dataframe out of the csv file
     '''
     # importing the remote file
-    if(function=="ckftp"):
-        csvinput = FTPTools.retrieveCKFtp(filename, usecols=usecols, dtype=Constants.dtype, compression="gz")
-    elif(function=="ftplib"):
-        csvinput = FTPTools.retrieveFtplib(filename, usecols=usecols, dtype=Constants.dtype, compression="gz")
+    csvinput = FTPTools.retrieveFtplib(filename, usecols=usecols, dtype=Constants.dtype, compression="gz")
     if csvinput is None:
         print "error : impossible to import the dataframe"
         return None
@@ -1449,7 +1446,7 @@ def analyzingIdCorresponding(csvinput, fileToCompare):
     
 def getCsvEtab():
     usecols = ['entrep_id','capital','DCREN','EFF_ENT']
-    csvEtab = FTPTools.retrieveFtplib("ProcessedData/cameliaEtabKevin.csv.gz", compression="gz",usecols=usecols,toPrint=True,sep=";")
+    csvEtab = FTPTools.retrieveFtplib("ProcessedData/cameliaEtabKevin.csv.gz", compression="gz",usecols=usecols,toPrint=False,sep=";")
     return csvEtab
 
 def getCsvScores():
@@ -1511,8 +1508,8 @@ def analyzingEntrepScore():
     csvScore = csvScore[csvScore.dateBilan!="0000-00-00"]
     # droping the useless columns
     del csvScore['sourceModif']
-#     # merging both the dataframes according to the entrep_id field
-#     entrepriseData = entrepriseData.merge(csvScore, on="entrep_id")
+    # merging both the dataframes according to the entrep_id field
+    entrepriseData = entrepriseData.merge(csvScore, on="entrep_id")
     print "... done"
     print ""
     
@@ -1549,7 +1546,6 @@ def analyzingEntrepScore():
     dicScore = {0:'scoreSolv', 1:'scoreZ',2:'scoreCH',3:'scoreAltman'}
     maxisMerged = np.max(entrepriseData,axis=0)
     minisMerged = np.min(entrepriseData,axis=0)
-    meansMerged = np.mean(entrepriseData,axis=0)
     maxisGlobal = np.max(csvScore,axis=0)
     print "max computed -",
     minisGlobal = np.min(csvScore,axis=0)
@@ -1635,43 +1631,84 @@ def analyzingEntrepScore():
     interval = time.time() - startTime
     print "done: ", interval, 'sec'
 
-def analyzingEntrepEtab(toSaveGraph = False):
+def analyzingEntrepEtab():
+    '''
+    function that analyzes the etab file.
+    1. it imports the paiementfile and extract the entreprises id.
+    2. it imports the etab file and computes statistics about entreprises
+    3. it prints statistics and creates histograms
+    -- IN:
+    the function takes no argument
+    -- OUT:
+    the function returns nothing
+    '''
     print "=== Starting Analysis of Entreprises Etablissment ==="
     print ""
     startTime = time.time()
-    csvinput = importAndCleanCsv(True, ftp = True)
-    column = csvinput['entrep_id'].values
-    # initializing variables
-    #     setting size variables
-    nbEntreprises = len(np.unique(column))
-    print "enterprises number :" , nbEntreprises
-    print ""
-    # initializing variables
-    #    dictionary linking entrep_id to concerned rows
-    dicEntreprise = {}
-    for entreprise in column:
-        if not dicEntreprise.has_key(entreprise):
-            # array containing ['entrep_id',nbEtab,array(capital),array(dateCreation),array(effectif)]
-            dicEntreprise[entreprise] = [entreprise,0,[],[],[]]
     
-    print "retrieving csvEtab file"
+    # importing Etab file
+    print "retrieving csvEtab file",
     csvEtab = getCsvEtab()
-#     entrepriseData = []
     print "... done:",
     interval = time.time() - startTime
     print interval, 'sec'
     print ""
     
+    column = csvEtab['entrep_id'].values
+    # initializing dicEntreprise, dic which will contain info usefull for stats
+    dicEntreprise = {}
+    for entreprise in column:
+        if not dicEntreprise.has_key(entreprise):
+            # array containing ['entrep_id',nbEtab,array(capital),array(dateCreation),array(effectif), isInFile(boolean)]
+            dicEntreprise[entreprise] = [entreprise,0,[],[],[],False]
+    nbEntreprisesGlobal = len(dicEntreprise)      
+      
+    # importing the BalAG file
+    print "retrieving csvBalAG file",
+    csvinput = importAndCleanCsv(toPrint=False, ftp = True)
+    print "... done:",
+    interval = time.time() - startTime
+    print interval, 'sec'
+    print ""
+    
+    # joining files
+    column = csvinput['entrep_id'].values
+    nbEntreprises = len(np.unique(column))
+    nbMissingEntreprises = 0
+    for entreprise in column:
+        if not dicEntreprise.has_key(entreprise):
+            # adding the entreprise to te file, and counting the missing entreprises
+            dicEntreprise[entreprise] = [entreprise,0,[],[],[]]
+            nbMissingEntreprises+=1
+        else:
+            # putting the boolean to True, the entreprise is in the BalAG file
+            dicEntreprise[entreprise][-1] = True
+        
+    # printing about missing entreprises
+    print ""
+    print "global entreprises number :", nbEntreprisesGlobal
+    print "enterprises number :" , nbEntreprises
+    print ""
+    print "missing entreprises :",nbMissingEntreprises,"-",100.0*nbMissingEntreprises/nbEntreprises,"%"
+    print ""
+    
+    del csvinput
+    
     ## ANALYSIS AND JOINING
     print "Analysing the file"
     nbNanCapital = 0
+    nbNanCapitalGlobal = 0
     nbNanDate = 0
+    nbNanDateGlobal = 0
     nbNanEffectif = 0
+    nbNanEffectifGlobal = 0
+    nbLineBalAG = 0
     total = len(csvEtab)
     print total
     percent = 1
     i = 0
     for line in csvEtab.values:
+        # printing progress
         i+=1
         if 100.0*i/total>percent:
             print percent,"%",
@@ -1679,31 +1716,39 @@ def analyzingEntrepEtab(toSaveGraph = False):
             if int(percent)%10==0:
                 print ""
         # line = ['entrep_id','capital','DCREN','EFF_ENT'] 
-        if line[0] not in dicEntreprise:
-            continue
+        nbLineBalAG += (1 if dicEntreprise[line[0]][5] else 0)
         # increasing number of Etablissment
         dicEntreprise[line[0]][1]+=1
         # adding info about capital
         if str(line[1]).lower()!="nan":
             dicEntreprise[line[0]][2].append(int(line[1]))
         else:
-            nbNanCapital+=1
+            nbNanCapitalGlobal+=1
+            nbNanCapital+= (1 if dicEntreprise[line[0]][5] else 0)
         # adding info about dateCreation
         if str(line[2]).lower()!="nan":
             dicEntreprise[line[0]][3].append(line[2])
-            print line[2]
         else:
-            nbNanDate+=1
+            nbNanDateGlobal+=1
+            nbNanDate+= (1 if dicEntreprise[line[0]][5] else 0)
         # adding info about effectif
         if str(line[3]).lower()!="nan":
             dicEntreprise[line[0]][4].append(int(line[3]))
         else:
-            nbNanEffectif+=1
+            nbNanEffectifGlobal+=1
+            nbNanEffectif+= (1 if dicEntreprise[line[0]][5] else 0)
     print "...done"
     print ""
-    print "number of Nan capital:",nbNanCapital
-    print "number of Nan date:",nbNanDate
-    print "number of Nan effectif:",nbNanEffectif
+    print "PAIEMENT FILE STATS"
+    print "number of Nan capital:",nbNanCapital, "-",100.0*nbNanCapital/nbLineBalAG,"%"
+    print "number of Nan date:",nbNanDate, "-",100.0*nbNanDate/nbLineBalAG,"%"
+    print "number of Nan effectif:",nbNanEffectif, "-",100.0*nbNanEffectif/nbLineBalAG,"%"
+    print ""
+    print "GLOBAL FILE STATS"
+    print "number of Nan capital:",nbNanCapitalGlobal, "-",100.0*nbNanCapitalGlobal/len(csvEtab),"%"
+    print "number of Nan date:",nbNanDateGlobal, "-",100.0*nbNanDateGlobal/len(csvEtab),"%"
+    print "number of Nan effectif:",nbNanEffectifGlobal, "-",100.0*nbNanEffectifGlobal/len(csvEtab),"%"
+    print ""
     
     ## ANALYSING CONSISTENCY
     nbNoInfo = 0
@@ -1731,7 +1776,7 @@ def analyzingEntrepEtab(toSaveGraph = False):
             pass
     print "...done"
     print "   nb of problems:",nbConsistencyError
-    print "   nb of missing entreprises:",100.0*nbNoInfo/len(dicEntreprise),"%"
+    print "   nb of missing informations:",100.0*nbNoInfo/len(dicEntreprise),"%"
     print "   nb of inconsistent capital:",100.0*nbInconsistentCapital/len(dicEntreprise),"%"
     print "   nb of inconsistent date:",100.0*nbInconsistentDate/len(dicEntreprise),"%"
     print "   nb of inconsistent effectif:",100.0*nbInconsistentEffectif/len(dicEntreprise),"%"
@@ -1741,10 +1786,13 @@ def analyzingEntrepEtab(toSaveGraph = False):
     # initializing arrays
     dateX = range(1950,2016)
     dateY = [0]*len(dateX)
+    dateYGlobal = [0]*len(dateX)
     capitalX = range(0,12)
     capitalY = [0]*len(capitalX)
+    capitalYGlobal = [0]*len(capitalX)
     effectifX = range(0,6)
     effectifY = [0]*len(effectifX)
+    effectifYGlobal = [0]*len(effectifX)
     nbDateError = 0
     for entreprise in dicEntreprise.keys():
         # handling capitals
@@ -1752,7 +1800,8 @@ def analyzingEntrepEtab(toSaveGraph = False):
         capital = dicEntreprise[entreprise][2]
         while i<len(capitalX)-1 and capital>10**(capitalX[i]):
             i+=1
-        capitalY[i]+=1
+        capitalYGlobal[i]+=1
+        capitalY[i]+=(1 if dicEntreprise[entreprise][5] else 0)
         # handling dates
         i=0
         try:
@@ -1761,28 +1810,32 @@ def analyzingEntrepEtab(toSaveGraph = False):
             date = int(date)
             while i<len(dateX)-1 and date>dateX[i]:
                 i+=1
-            dateY[i]+=1
+            dateYGlobal[i]+=1
+            dateY[i]+=(1 if dicEntreprise[entreprise][5] else 0)
         except:
             nbDateError+=1
-            pass
         # handling effectifs
         i=0
         effectif = dicEntreprise[entreprise][4]
         print effectif
         while i<len(effectifX)-1 and effectif>10**(effectifX[i]):
             i+=1
-        effectifY[i]+=1
+        effectifYGlobal[i]+=1
+        effectifY[i]+=(1 if dicEntreprise[entreprise][5] else 0)
     # handling output 
     prepareInput("etabFile")
-    DrawingTools.createHistogram(x=capitalX,y1=capitalY,percent=True,
+    DrawingTools.createHistogram(x=capitalX,y1=capitalY,y2=capitalYGlobal,
+                                 name1 = "BalAG stats", name2 = "Global stats", percent=True,
                                  xlabel="capitals",ylabel="number of entreprise (%)",
-                                 name="Repartition of the capitals",
+                                 name="Repartition of capitals",
                                  filename="01_repartitionCapital")
-    DrawingTools.createHistogram(x=dateX,y1=dateY,percent=True,
+    DrawingTools.createHistogram(x=dateX,y1=dateY,y2=dateYGlobal,
+                                 name1 = "BalAG stats", name2 = "Global stats", percent=True,
                                  xlabel="dates",ylabel="number of entreprise (%)",
                                  name="Repartition of the dates",
                                  filename="01_repartitionDate")
-    DrawingTools.createHistogram(x=effectifX,y1=effectifY,percent=True,
+    DrawingTools.createHistogram(x=effectifX,y1=effectifY,y2=effectifYGlobal,
+                                 name1 = "BalAG stats", name2 = "Global stats", percent=True,
                                  xlabel="effectifs",ylabel="number of entreprise (%)",
                                  name="Repartition of the effectifs",
                                  filename="01_repartitionEffectif")

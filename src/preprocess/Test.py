@@ -29,7 +29,7 @@ from PaiementDataExtraction import *
 analyzingEntrepScore()
 # printLastGraphs("scoreFile")
 
-# analyzingEntrepEtab(False)
+# analyzingEntrepEtab()
 # printLastGraphs("etabFile")
 
 
