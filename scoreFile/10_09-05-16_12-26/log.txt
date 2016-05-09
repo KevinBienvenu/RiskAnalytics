@@ -1,0 +1,41 @@
+
+enterprises number : 702875
+importing the Score csv ... done: 1938.61599994 sec
+
+cleaning the dataframe ... done
+
+analyzing dates consistence
+   percentage of scores: 23.524542577
+
+
+computing histogram
+number of lines to analyze : 891730
+max computed - min computed
+scoreSolv
+   max merged: 90   max global: 90
+   min merged: 0   min global: 0
+
+scoreZ
+   max merged: 9999.9   max global: 9999.9
+   min merged: -9999.9   min global: -9999.9
+
+scoreCH
+   max merged: 20.0   max global: 20.0
+   min merged: -7.0   min global: -7.0
+
+scoreAltman
+   max merged: 3867296.21   max global: 15616633.54
+   min merged: -382372.8   min global: -382372.8
+
+analyzing merged file
+10 % 20 % 30 % 40 % 50 % 60 % 70 % 80 % 90 % 
+
+analyzing global file
+10 % 20 % 30 % 40 % 50 % 60 % 70 % 80 % 90 % 
+errors: {'scoreCHglobal': 0, 'scoreAltmanglobal': 0, 'scoreCH': 0, 'scoreSolv': 329723, 'scoreSolvglobal': 518634, 'scoreZglobal': 0, 'scoreAltman': 0, 'scoreZ': 0}
+
+repartition_scoreSolv
+repartition_scoreZ
+repartition_scoreCH
+repartition_scoreAltman
+done:  1983.125 sec
