@@ -26,11 +26,11 @@ from PaiementDataExtraction import *
 # print sum([1 if b>0 or b<0 else 0 for b in a])
 
 
-# analyzingEntrepScore(False)
+analyzingEntrepScore()
 # printLastGraphs("scoreFile")
 
 # analyzingEntrepEtab(False)
-printLastGraphs("etabFile")
+# printLastGraphs("etabFile")
 
 
 # p = pd.DataFrame(np.random.randint(0,10,size=(5,2)), columns=['1','2'])

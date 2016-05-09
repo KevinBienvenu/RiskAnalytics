@@ -1458,15 +1458,15 @@ def getCsvScores():
 #     csvScore.set_index('entrep_id',inplace=True)
     return csvScore
 
-def analyzingEntrepScore(toSaveGraph = False):
+def analyzingEntrepScore():
     print "=== Starting Analysis of Entreprises Scores ==="
     print ""
     
     startTime = time.time()
     csvinput = importAndCleanCsv(True, ftp = True)
     column = csvinput[['entrep_id','datePiece']].values
-    # initializing variables
-    #     setting size variables
+    #initializing variables
+    #    setting size variables
     nbEntreprises = len(np.unique(column))
     print "enterprises number :" , nbEntreprises
     # initializing variables
@@ -1475,16 +1475,23 @@ def analyzingEntrepScore(toSaveGraph = False):
     dicNbEntreprise = {}
     ind = 0
     for entreprise in column:
+        # if the entreprise is not present in the dictionay we add it
         if not entrepriseToRowsDict.has_key(entreprise[0]):
             entrepriseToRowsDict[entreprise[0]] = []
+        # we add the year of the bill to the dictionary
         entrepriseToRowsDict[entreprise[0]].append(entreprise[1][:4])
         ind += 1
+    # we create another dictionary : dicNbEntreprise
+    # keys : entreprises
+    # values : [entreprise, nbBill, minYear, maxYear]
     for entreprise in entrepriseToRowsDict:
         dicNbEntreprise[entreprise] = [entreprise,len(entrepriseToRowsDict[entreprise]),min(entrepriseToRowsDict[entreprise]),max(entrepriseToRowsDict[entreprise])]
+    # clearing the column
     column = []
+    del entrepriseToRowsDict
+    # creating a dataframe out of the previous dictionary
     entrepriseData = pd.DataFrame.from_dict(dicNbEntreprise, orient='index')
     entrepriseData.columns = ['entrep_id','nbBills','dateMin','dateMaxi']
-#     entrepriseData = []
 
     ## IMPORTING SCORE DATA
     print "importing the Score csv",
@@ -1494,64 +1501,96 @@ def analyzingEntrepScore(toSaveGraph = False):
     print interval, 'sec'
     print ""
     
-    # CLEANING THE DATAFRAME
+    # CLEANING AND MERGING THE DATAFRAME
     print "cleaning the dataframe",
-    entrepriseData = entrepriseData.merge(csvScore, on="entrep_id")
-    entrepriseData = entrepriseData[entrepriseData.dateBilan.str[2:4]>=10]
-    entrepriseData = entrepriseData[entrepriseData.sourceModif=="bilans1"]
-    entrepriseData = entrepriseData[entrepriseData.dateBilan!="0000-00-00"]
-    del entrepriseData['sourceModif']
+    # keeping only bilans1 in the score file
+    csvScore = csvScore[csvScore.sourceModif=="bilans1"]
+    # removing all years before 2010
+    csvScore = csvScore[csvScore.dateBilan.str[2:4]>=10]
+    # droping lines with empty dates
+    csvScore = csvScore[csvScore.dateBilan!="0000-00-00"]
+    # droping the useless columns
+    del csvScore['sourceModif']
+#     # merging both the dataframes according to the entrep_id field
+#     entrepriseData = entrepriseData.merge(csvScore, on="entrep_id")
     print "... done"
     print ""
-
+    
+    # final entrepriseData fields:
+    # ['entrep_id', 'nbBills', 'dateMin', 'dateMax', 'dateBilan', 'scoreSolv','scoreZ','scoreCH','scoreAltman']
+    # [    0      ,     1    ,     2    ,     3    ,     4      ,      5     ,   6    ,    7    ,     8
 
     ## ANALYZING DATES CONSISTENCE
     print "analyzing dates consistence"
+    # adding a new field to the dictionary
+    # values: list of dates, 0
     for entreprise in dicNbEntreprise.keys():
         dicNbEntreprise[entreprise].append(0)
     for line in entrepriseData.values:
-#         print line[4][:4], line[3], line[2], line[4][:4]<=line[3] and line[4][:4]>=line[2]
+        # for each entry, if the dateBilan is between dateMin-1 and dateMax we increase the counter
+        # we allow the bilan of year N counting for year N+1 and N
         if line[4][:4]<=line[3] and line[4][:4]>=int(line[2])-1:
             dicNbEntreprise[int(line[0])][-1]+=1
+    # computing the percentage of years present in the file
+    # for instance if a company has dateMin=2011, dateMax=2015 and three entries : 2010, 2012, 2014
+    # all three of them are valid, we have 3 years over 5, so the score for this company is 60%
+    #
+    # we assume here that each year is present at most one time
     for entreprise in dicNbEntreprise.keys():
         dicNbEntreprise[entreprise][-1] = 100.0*dicNbEntreprise[entreprise][-1]/(int(dicNbEntreprise[entreprise][3])+1-int(dicNbEntreprise[entreprise][2]))
     print "   percentage of scores:", 1.0*sum([a[-1] for a in dicNbEntreprise.values()])/len(dicNbEntreprise)
     print ""
     print ""
+    del dicNbEntreprise
     
-    ## CREATING HISTOGRAMS AND PRINTING STAT
+    ## CREATING HISTOGRAMS AND PRINTING STATS
     print "computing histogram"
+    print "number of lines to analyze :", len(csvScore)
     dicScore = {0:'scoreSolv', 1:'scoreZ',2:'scoreCH',3:'scoreAltman'}
-    maxis = np.max(entrepriseData,axis=0)
-    minis = np.min(entrepriseData,axis=0)
-    means = np.mean(entrepriseData,axis=0)
+    maxisMerged = np.max(entrepriseData,axis=0)
+    minisMerged = np.min(entrepriseData,axis=0)
+    meansMerged = np.mean(entrepriseData,axis=0)
+    maxisGlobal = np.max(csvScore,axis=0)
+    print "max computed -",
+    minisGlobal = np.min(csvScore,axis=0)
+    print "min computed"
     dicX = {}
     dicY = {}
     dicError = {}
     nbStepHistogram = 50
+    # getting ready to plot histograms
     for dic in dicScore.values():
         print dic
-        print "   max:",maxis[dic]
-        print "   min:",minis[dic]
-        print "   mean:",means[dic]
+        # getting min and max values
+        print "   max merged:",maxisMerged[dic],
+        print "  max global:",maxisGlobal[dic]
+        print "   min merged:",minisMerged[dic],
+        print "  min global:",minisGlobal[dic]
         print ""
         if dic=="scoreZ":
-            minis[dic] = -20
-            maxis[dic] = 20
+            minisGlobal[dic] = -20
+            maxisGlobal[dic] = 20
         if dic=="scoreAltman":
-            minis[dic] = 0
-            maxis[dic] = 20
-        dicX[dic] = range(int(minis[dic]),int(maxis[dic])+1,max(1,int((maxis[dic]+1-minis[dic])/nbStepHistogram)))
+            minisGlobal[dic] = 0
+            maxisGlobal[dic] = 20
+        # creating dic to store histograms values
+        dicX[dic] = range(int(minisGlobal[dic]),int(maxisGlobal[dic])+1,max(1,int((maxisGlobal[dic]+1-minisGlobal[dic])/nbStepHistogram)))
         dicY[dic] = [0] * nbStepHistogram
+        dicY[dic+"global"] = [0] * nbStepHistogram
         dicError[dic] = 0
+        dicError[dic+"global"] = 0
+    # ANALYZING MERGED FILE
     p = 0
     percent = 10
     total = len(entrepriseData)
+    print "analyzing merged file"
     for line in entrepriseData.values:
+        # printing progress
         p+=1
         if 100.0*p/total>percent:
             print percent,'%',
             percent+=10
+        # getting through the scores
         for dic in dicScore.keys():
             i=0
             try:
@@ -1561,13 +1600,37 @@ def analyzingEntrepScore(toSaveGraph = False):
                 dicY[dicScore[dic]][i]+=1   
             except:
                 dicError[dicScore[dic]]+=1 
+    del entrepriseData
+    print ""
+    print ""
+    # ANALYZING GLOBAL FILE
+    print "analyzing global file"
+    p = 0
+    percent = 10
+    total = len(csvScore)
+    for line in csvScore.values:
+        # printing progress
+        p+=1
+        if 100.0*p/total>percent:
+            print percent,'%',
+            percent+=10
+        # getting through the scores
+        for dic in dicScore.keys():
+            i=0
+            try:
+                while i<len(dicX[dicScore[dic]])-1 and dicX[dicScore[dic]][i+1]<line[2+dic]:
+                    i+=1
+                dicY[dicScore[dic]+"global"][i]+=1   
+            except:
+                dicError[dicScore[dic]+"global"]+=1
+        
     print ""
     print "errors:", dicError
     print ""   
     
     prepareInput("scoreFile")
     for dic in dicScore.values():
-        DrawingTools.createHistogram(x=dicX[dic], y1=dicY[dic], name1=dic, xlabel="score", ylabel="nombre d'entreprise", percent=True, name="repartition du "+dic, filename="repartition_"+dic)   
+        DrawingTools.createHistogram(x=dicX[dic], y1=dicY[dic], name1=dic+" merged", y2=dicY[dic+"global"], name2=dic+" global",xlabel="score", ylabel="number of entreprises", percent=True, name="Repartition of "+dic, filename="repartition_"+dic)   
     
     interval = time.time() - startTime
     print "done: ", interval, 'sec'
@@ -1676,7 +1739,7 @@ def analyzingEntrepEtab(toSaveGraph = False):
     
     print "computing analysis",
     # initializing arrays
-    dateX = range(1990,2016)
+    dateX = range(1950,2016)
     dateY = [0]*len(dateX)
     capitalX = range(0,12)
     capitalY = [0]*len(capitalX)
