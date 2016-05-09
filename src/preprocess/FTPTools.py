@@ -158,89 +158,89 @@ def retrieveFtplib(filename, compression = None, usecols=None, dtype=None, toPri
         print 'Dataframe created :', interval, 'sec'
     return db
     
-def retrieveCKFtp(filename, compression = None, usecols=None, dtype=None, toPrint = False):
-    """
-    function that connects to the remote FTP serveur and extract a pandas dataframe
-    the downloaded file must be compressed through gzip and containing a csv file.
-    -- IN
-    filename : the filename with its extension to be downloaded from the remote ftp server (string)
-    compression : string that specifies the encoding of the file (string in [None,"gz","bz2"] default: None
-    usecols : *optional* an array containing the name of the column to extract (string[]) default: None
-    dtype : *optional* a dictionary containing the name of the columns and the type to cast them ({string:string}) default: None
-    -- OUT
-    db : a pandas dataframe containing the remote database (pandas.Dataframe)
-    return None when an error occurs
-    """
-    if toPrint:
-        print "==========================================="
-        print "=== Connection to the remote FTP server ==="
-        print "==========================================="
-        print ""
-        print "using chilkat.CkFTP2"
-        print "loading :",filename
-        print "" 
-    startTime = time.time()
-    # retrieving information about account on ftp server
-    (user, password, host, port) = getAccount()
-    if user==None:
-        print "error : coudn't read the account information, abort download"
-        return None
-    ftp = CkFtp2()
-    # connecting and logging in
-    ftp.put_Passive(True)
-    ftp.put_Hostname(host)
-    ftp.put_Port(port)
-    ftp.put_Username(user)
-    ftp.put_Password(password)
-    ftp.put_AuthTls(True)
-    ftp.put_Ssl(False)
-    ftp.put_SslProtocol("TLS 1.2")
-    try:
-        ftp.Connect()
-    except:
-        print "error : unable to connect to the ftp server"
-        return None
-    if toPrint:
-        print "connected to the FTP server"
-    # retrieving the remote file as a binary file
-    data = CkByteData()
-    try:
-        ftp.GetRemoteFileBinaryData(filename,data)
-    except:
-        print "error : non-existing file :",filename
-        return None
-    interval = time.time() - startTime 
-    if toPrint:
-        print 'Data downloaded :', interval, 'sec'
-    ftp.Disconnect()
-    ftp.ClearDirCache()
-    
-    # Unziping the file
-    if compression!=None:
-        if compression=="gz":
-            try:
-                results = gzip.GzipFile(fileobj=cS(data.getData()))
-            except:
-                print "error : decompression impossible : not a gzip file"
-                return None
-            data.clear()
-        elif compression=="bz2":
-            try:
-                results = bz2.BZ2File(fileobj=cS(data.getData()))
-            except:
-                print "error : decompression impossible : not a bz2 file"
-                return None
-            data.clear()
-    else:
-        results = cS(data.getData())
-    # extracting the file into a pandas dataframe
-    try:
-        db = pd.read_csv(results,sep="\t",dtype = dtype, usecols = usecols)
-    except:
-        print "error in the extraction of the dataframe"
-        return None
-    interval = time.time() - startTime 
-    if toPrint:
-        print 'Dataframe created :', interval, 'sec'
-    return db
+# def retrieveCKFtp(filename, compression = None, usecols=None, dtype=None, toPrint = False):
+#     """
+#     function that connects to the remote FTP serveur and extract a pandas dataframe
+#     the downloaded file must be compressed through gzip and containing a csv file.
+#     -- IN
+#     filename : the filename with its extension to be downloaded from the remote ftp server (string)
+#     compression : string that specifies the encoding of the file (string in [None,"gz","bz2"] default: None
+#     usecols : *optional* an array containing the name of the column to extract (string[]) default: None
+#     dtype : *optional* a dictionary containing the name of the columns and the type to cast them ({string:string}) default: None
+#     -- OUT
+#     db : a pandas dataframe containing the remote database (pandas.Dataframe)
+#     return None when an error occurs
+#     """
+#     if toPrint:
+#         print "==========================================="
+#         print "=== Connection to the remote FTP server ==="
+#         print "==========================================="
+#         print ""
+#         print "using chilkat.CkFTP2"
+#         print "loading :",filename
+#         print "" 
+#     startTime = time.time()
+#     # retrieving information about account on ftp server
+#     (user, password, host, port) = getAccount()
+#     if user==None:
+#         print "error : coudn't read the account information, abort download"
+#         return None
+#     ftp = CkFtp2()
+#     # connecting and logging in
+#     ftp.put_Passive(True)
+#     ftp.put_Hostname(host)
+#     ftp.put_Port(port)
+#     ftp.put_Username(user)
+#     ftp.put_Password(password)
+#     ftp.put_AuthTls(True)
+#     ftp.put_Ssl(False)
+#     ftp.put_SslProtocol("TLS 1.2")
+#     try:
+#         ftp.Connect()
+#     except:
+#         print "error : unable to connect to the ftp server"
+#         return None
+#     if toPrint:
+#         print "connected to the FTP server"
+#     # retrieving the remote file as a binary file
+#     data = CkByteData()
+#     try:
+#         ftp.GetRemoteFileBinaryData(filename,data)
+#     except:
+#         print "error : non-existing file :",filename
+#         return None
+#     interval = time.time() - startTime 
+#     if toPrint:
+#         print 'Data downloaded :', interval, 'sec'
+#     ftp.Disconnect()
+#     ftp.ClearDirCache()
+#     
+#     # Unziping the file
+#     if compression!=None:
+#         if compression=="gz":
+#             try:
+#                 results = gzip.GzipFile(fileobj=cS(data.getData()))
+#             except:
+#                 print "error : decompression impossible : not a gzip file"
+#                 return None
+#             data.clear()
+#         elif compression=="bz2":
+#             try:
+#                 results = bz2.BZ2File(fileobj=cS(data.getData()))
+#             except:
+#                 print "error : decompression impossible : not a bz2 file"
+#                 return None
+#             data.clear()
+#     else:
+#         results = cS(data.getData())
+#     # extracting the file into a pandas dataframe
+#     try:
+#         db = pd.read_csv(results,sep="\t",dtype = dtype, usecols = usecols)
+#     except:
+#         print "error in the extraction of the dataframe"
+#         return None
+#     interval = time.time() - startTime 
+#     if toPrint:
+#         print 'Dataframe created :', interval, 'sec'
+#     return db
     
