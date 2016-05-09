@@ -1817,7 +1817,6 @@ def analyzingEntrepEtab():
         # handling effectifs
         i=0
         effectif = dicEntreprise[entreprise][4]
-        print effectif
         while i<len(effectifX)-1 and effectif>10**(effectifX[i]):
             i+=1
         effectifYGlobal[i]+=1

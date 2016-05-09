@@ -1,0 +1,10 @@
+name:Repartition of the effectifs
+xlabel:effectifs
+ylabel:number of entreprise (%)
+typeyaxis:linear
+x:0,1,2,3,4,5
+y1:290450,264395,110491,14685,2672,18354
+name1:BalAG stats
+percent:True
+y2:15142893,1186014,223430,22082,3132,1222559
+name2:Global stats
