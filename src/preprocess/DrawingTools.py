@@ -308,7 +308,6 @@ def drawHistogramFromFile(filename, typeHist="bars"):
                 typeyaxis = tab[1]
             if tab[0] == "percent":
                 percent = tab[1][:4]=="True"
-    
     if typeHist=="bars":
         drawHistogram(x=x, y1=y1, y2=y2, y3=y3, 
                       name1=name1, name2=name2, name3=name3, 
@@ -345,7 +344,48 @@ def createHistogram2D(y0,
     fig = go.Figure(data=data,layout=layout)  # @UndefinedVariable
     py.image.save_as(fig, filename+".png")
     
-
+def drawLargeHistogram2D(filename):
+    nbLabel0 = 25
+    nbLabel1 = 25
+    with open(filename+".hist2d", "r") as fichier:
+        for line in fichier:
+            tab = line.split(":")
+            if tab[0]=="y0":
+                y0 = tab[1].split(",")
+            elif tab[0]=="y1":
+                y1 = tab[1].split(",")
+            elif tab[0] == "name":
+                name = tab[1]
+            elif tab[0] == "xlabel":
+                xlabel = tab[1]
+            elif tab[0] == "ylabel":
+                ylabel = tab[1]
+            del tab
+    min0 = int(min(y0))
+    max0 = 800000
+    min1 = int(min(y1))
+    max1 = int(max(y1))
+    label0 = [min0+i*(max0-min0)/nbLabel0 for i in range(nbLabel0)]
+    label1 = [min1+i*(max1-min1)/nbLabel1 for i in range(nbLabel1)]
+    hist = [[0]*nbLabel1 for _ in range(nbLabel0)]
+    for k in range(len(y0)):
+        i=0
+        while i<nbLabel0-1 and int(y0[k])>int(label0[i]):
+            i+=1
+        j=0
+        while j<nbLabel1-1 and int(y1[k])>int(label1[j]):
+            j+=1
+        hist[i][j] += 1
+#         print i,j,y0[k]
+    y0bis = []
+    y1bis = []
+    for i in range(nbLabel0):
+        for j in range(nbLabel1):
+            hist[i][j] = 1000.0*hist[i][j]/len(y0)
+            for _ in range(int(hist[i][j])):
+                y0bis.append(label0[i])
+                y1bis.append(label1[j])
+    createHistogram2D(y0=y0bis, y1=y1bis, xlabel=xlabel, ylabel=ylabel, name=name, filename=filename)
     
     
     

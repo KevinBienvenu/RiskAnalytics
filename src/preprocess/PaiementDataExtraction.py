@@ -52,7 +52,6 @@ from Constants import bclnIdIntFormat, bclnIdMinimalBillsNumber, \
     clnMontMinimalValue, bclnMontMaximalValue, clnMontMaximalValue, \
     bclnMontantLitigeNonZero
 
-
 def importCsv(filename = 'cameliaBalAG_extraitRandom.csv',sep='\t',usecols = None,addPaidBill = False):
     '''
     function that imports the content of the csv file. 
@@ -150,7 +149,68 @@ def getCsvScores():
 #     csvScore.set_index('entrep_id',inplace=True)
     return csvScore
 
-
+def getAndPreprocessCsvEtab(csvinput):
+    '''
+    function that preprocesses the csvEtab file, keeping only one row by entreprise
+    and returning a dictionary containing these informations
+    
+    !! First prototype : only keep the first matching row so must be inaccurate - to be improved    
+    
+    -- IN:
+    csvetab: the pandas dataframe containing etab file and at least column entrep_id in pos 0 (pandas.Dataframe)
+    -- OUT:
+    dicEntrep : dic linking entrep_id to info from the csvfile (dic{int:[object]})
+    '''
+    csvetab = getCsvEtab(csvinput)
+    entrep = np.unique(csvetab['entrep_id'].values)
+    dicEntrep = {}
+    for ent in entrep:
+        dicEntrep[ent] = []
+    del entrep
+    for line in csvetab.values:
+        if not(line[0] in dicEntrep):
+            continue
+        if len(dicEntrep[line[0]])==0:
+            dicEntrep[line[0]].append(line[1:])
+    missingEntreprises = 0
+    for ent in dicEntrep:
+        l = len(dicEntrep[ent])
+        if l==0:
+            missingEntreprises+=1
+    return dicEntrep       
+ 
+def getAndPreprocessCsvScore(csvinput):  
+    '''
+    function that preprocesses the csvScore file, keeping only one row by entreprise
+    and returning a dictionary containing these informations
+    
+    -- IN:
+    csvinput: the pandas dataframe containing BalAG file and at least column entrep_id in pos 0 (pandas.Dataframe)
+    -- OUT:
+    dicEntrep : dic linking entrep_id to info from the csvfile (dic{entrep_id(int):dic{year(int):[scores(float)]})
+    '''
+    csvScore = getCsvScores()
+    csvScore = csvScore[csvScore.sourceModif=="bilans1"]
+    # removing all years before 2010
+    csvScore = csvScore[csvScore.dateBilan.str[2:4]>=10]
+    # droping lines with empty dates
+    csvScore = csvScore[csvScore.dateBilan!="0000-00-00"]
+    # droping the useless columns
+    del csvScore['sourceModif']
+    
+    # importing csvinput and creating list of entreprises
+    entrep = np.unique(csvinput['entrep_id'].values)
+    dicEntrep = {}
+    for ent in entrep:
+        dicEntrep[ent] = {}
+        
+    # going through the csvScore file
+    for line in csvScore.values:
+        if not line[0] in dicEntrep:
+            continue
+        dicEntrep[line[0]][int(line[1][:4])] = line[2:]
+    return dicEntrep
+    
 ''' II - Cleaning Functions '''
 def cleaningEntrepId(csvinput, toPrint = True):
     '''
@@ -2049,7 +2109,8 @@ def printLastGraphs(filename = "analysis"):
             print "...done"
         elif tab[1]=="hist2d":
             print direct,
-            DrawingTools.drawHistogramFromFile(tab[0],typeHist="2d") 
+#             DrawingTools.drawHistogramFromFile(tab[0],typeHist="2d") 
+            DrawingTools.drawLargeHistogram2D(tab[0])
             print "...done"
 
 def printConfiguration(globalConfig = False):
