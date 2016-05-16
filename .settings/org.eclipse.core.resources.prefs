@@ -1,10 +1,10 @@
 eclipse.preferences.version=1
 encoding//src/predictions/EntrepriseLearning.py=utf-8
 encoding//src/predictions/Main.py=utf-8
+encoding//src/preprocess/CameliaBalAGPreprocess.py=utf-8
 encoding//src/preprocess/Constants.py=utf-8
 encoding//src/preprocess/DrawingTools.py=utf-8
 encoding//src/preprocess/FTPTools.py=utf-8
-encoding//src/preprocess/PaiementDataExtraction.py=utf-8
 encoding//src/preprocess/Test.py=utf-8
 encoding//src/preprocess/Utils.py=utf-8
 encoding//src/preprocess/preprocessTest.py=utf-8

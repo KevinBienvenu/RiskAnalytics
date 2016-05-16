@@ -17,7 +17,7 @@ from sklearn import naive_bayes
 
 import numpy as np
 import pandas as pd
-from preprocess import PaiementDataExtraction
+from preprocess import CameliaBalAGPreprocess
 from preprocess import Utils
 
 
@@ -127,7 +127,7 @@ def preprocessData(toExportCsv = False):
     X = []
     Y = []
     # importing the BalAG file
-    csvinput = PaiementDataExtraction.importAndCleanCsv(toPrint=False, ftp=True)
+    csvinput = CameliaBalAGPreprocess.importAndCleanCsv(toPrint=False, ftp=True)
     for line in csvinput[['entrep_id','datePiece','dateEcheance','dateDernierPaiement','montantPieceEur']].values:
         entrep_id.append(int(line[0]))
         dates.append(int(line[1][:4]))
@@ -141,7 +141,7 @@ def preprocessData(toExportCsv = False):
     del csvinput['dateDernierPaiement']
     del csvinput['montantPieceEur']
     # importing the Etab file
-    dicCsvEtab = PaiementDataExtraction.getAndPreprocessCsvEtab(csvinput)
+    dicCsvEtab = CameliaBalAGPreprocess.getAndPreprocessCsvEtab(csvinput)
     rowsToDrop = []
     # merging files and removing incomplete rows
     compt = Utils.initProgress(X,1)
@@ -158,7 +158,7 @@ def preprocessData(toExportCsv = False):
     del entrep_id[rowsToDrop]
     del dates[rowsToDrop]
     # importing score file
-    dicCsvScore = PaiementDataExtraction.getAndPreprocessCsvScore(csvinput)
+    dicCsvScore = CameliaBalAGPreprocess.getAndPreprocessCsvScore(csvinput)
     del csvinput
     rowsToDrop = []
     # merging files and removing incomplete rows
@@ -197,17 +197,14 @@ def preprocessData(toExportCsv = False):
 def outOfNowhere(cumm,val):
     rd = random.random()
     return val[np.max([i for i in range(len(cumm)) if cumm[i]<rd]+[0])]+(int)(random.random()*5)
-    
-     
-
 
 def learning():
-    csvinput = PaiementDataExtraction.importAndCleanCsv(ftp=False)
+    csvinput = CameliaBalAGPreprocess.importAndCleanCsv(ftp=False)
     # entrep_id = extractMostRepresentedEntreprise(csvinput)
     # csvinput = importEntreprise(csvinput, entrep_id)
     
-    # PaiementDataExtraction.analysingMontant(csvinput, False, False)
-    # PaiementDataExtraction.analysingDates(csvinput, False, False)
+    # CameliaBalAGPreprocess.analysingMontant(csvinput, False, False)
+    # CameliaBalAGPreprocess.analysingDates(csvinput, False, False)
     
     csvinput.reindex(np.random.permutation(csvinput.index))
     

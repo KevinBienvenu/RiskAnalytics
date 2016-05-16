@@ -7,6 +7,12 @@ Created on 5 Apr 2016
 Module containing functions extracting informations from the
 file 'cameliaBalAG.csv' 
 
+All tests in module preprocessTest must pass to properly use the function
+of this module. These tests include the functions from the modules:
+- FTPTools : for the downloading and importing
+- DrawingTools : for the export of graphs and histograms
+- Utils : for other minor functions
+
 === Part I : Import of the data
         Imports and functions that get files and extract dataframe out of csv files
 

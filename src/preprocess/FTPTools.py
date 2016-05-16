@@ -62,12 +62,13 @@ def getAccount():
     except:
         print "error : coundn't read the account file"
         return (None, None, None, None)
-    
-    
+     
 def retrieveFtplib(filename, compression = None, usecols=None, dtype=None, toPrint = False, sep="\t"):
     """
     function that connects to the remote FTP serveur and extract a pandas dataframe
-    the downloaded file must be compressed through gzip and containing a csv file.
+    the downloaded file must contain a csv file.
+    It can be bz2, gz encoded or not encoded at all
+    if it is encoded, the right extension must be present in the name
     -- IN
     filename : the filename with its extension to be downloaded from the remote ftp server (string)
     compression : string that specifies the encoding of the file (string in [None,"gz","bz2"] default: None
@@ -146,7 +147,11 @@ def retrieveFtplib(filename, compression = None, usecols=None, dtype=None, toPri
     else:
         results = sio
     # extracting the file into a pandas dataframe
-    db = pd.read_csv(results,sep=sep, usecols = usecols)
+    try:
+        db = pd.read_csv(results,sep=sep, usecols = usecols)
+    except:
+        print "error : the file doesn't not contain a proper Dataframe"
+        return None
     sio.close()
 #     try:
 #         db = pd.read_csv(results,sep="\t", usecols = usecols, dtype = dtype)
