@@ -18,6 +18,7 @@ from sklearn import naive_bayes
 import numpy as np
 import pandas as pd
 from preprocess import PaiementDataExtraction
+from preprocess import Utils
 
 
 def importEntreprise(csvinput, entrep_id):
@@ -135,15 +136,22 @@ def preprocessData(toExportCsv = False):
         echeance = (datetime.datetime.strptime(line[2],"%Y-%m-%d").date()-datetime.datetime.strptime(line[1],"%Y-%m-%d").date()).days
         X.append([echeance,montant,logmontant])
         Y.append(-1 if line[3]=="0000-00-00" else 1)
+    del csvinput['datePiece']
+    del csvinput['dateEcheance']
+    del csvinput['dateDernierPaiement']
+    del csvinput['montantPieceEur']
     # importing the Etab file
     dicCsvEtab = PaiementDataExtraction.getAndPreprocessCsvEtab(csvinput)
     rowsToDrop = []
     # merging files and removing incomplete rows
+    compt = Utils.initProgress(X,1)
     for i in range(len(X)):
+        compt = Utils.updateProgress(compt)
         if not(entrep_id[i] in dicCsvEtab):
             rowsToDrop.append(i)
-        for l in range(dicCsvEtab[entrep_id[i]]):
-            X[i].append(dicCsvEtab[entrep_id[i]][l])
+            continue
+        for l in range(len(dicCsvEtab[entrep_id[i]][0])):
+            X[i].append(dicCsvEtab[entrep_id[i]][0][l])
     print "missing information :",100.0*len(rowsToDrop)/len(X),"%"
     del X[rowsToDrop]
     del Y[rowsToDrop]

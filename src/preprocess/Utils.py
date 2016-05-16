@@ -177,7 +177,43 @@ def drawArray(openfile, array, arrayName):
     openfile.write("\n")
 
 
+''' function about progress printing '''
 
+def initProgress(completefile, p = 10):
+    '''
+    function initializing the compt variable to print progress
+    -- IN:
+    completefile : any kind of iterable object, the len(completefile) must be a valid command
+    p : step of percentage for the printing (int) default = 10
+    -- OUT:
+    compt : the compt variable containing (i=iteration variable, p=current percent,
+                                            total=len(completefile),deltap=step of percent)
+    '''
+    i = 0
+    total = len(completefile)
+    compt = (i,p,total,p)   
+    return compt   
+
+def updateProgress(compt):
+    '''
+    function updating the compt variable and printing progress
+    -- IN
+    compt : compt variable to be updated (see initProgress)
+    -- OUT
+    compt : the updated compt variable
+    '''
+    (i,percent,total,deltap) = compt
+    i+=1
+    if 100.0*i/total > percent:
+        print percent,"%",
+        percent+=deltap
+        if deltap==1 and percent%10==0:
+            print ""
+    compt = (i,percent,total,deltap)
+    return compt               
+                    
+                    
+        
 
 
 
