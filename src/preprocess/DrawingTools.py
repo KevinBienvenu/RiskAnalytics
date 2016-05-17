@@ -79,6 +79,7 @@ def createHistogram(x,
                       name1=name1, name2=name2, name3=name3, 
                       percent=percent, xlabel=xlabel, ylabel=ylabel, 
                       typeyaxis=typeyaxis, name=name, filename=filename)
+
 def drawHistogram(x,
                   y1,
                   y2=None,
@@ -118,6 +119,9 @@ def drawHistogram(x,
     -- OUT
     returns nothing
     '''
+    if x is None or y1 is None:
+        print "error : no data to draw"
+        return
     py.plotly.sign_in('KevinBienvenu','r8vjr5qj9n')
     if percent:
         y1 = [int(y) for y in y1]
@@ -205,7 +209,9 @@ def saveHistogram(x,
     -- OUT
     returns nothing
     """
-    print filename
+    if x is None or y1 is None:
+        print "error : no data to draw"
+        return
     with open(filename+".txt", 'w') as openfile:
         openfile.write("name:"+name+"\n")
         openfile.write("xlabel:"+xlabel+"\n")
@@ -215,10 +221,10 @@ def saveHistogram(x,
         Utils.drawArray(openfile, y1, "y1")
         openfile.write("name1:"+name1+"\n")
         openfile.write("percent:"+str(percent)+"\n")
-        if y2!=None:
+        if y2 is not None:
             Utils.drawArray(openfile, y2, "y2")
             openfile.write("name2:"+name2+"\n")
-        if y3!=None:
+        if y3 is not None:
             Utils.drawArray(openfile, y3, "y3")
             openfile.write("name3:"+name3+"\n")
 
@@ -326,8 +332,21 @@ def createHistogram2D(y0,
                       filename="untitledPlot"):
     '''
     function that creates a histogram 2d with y0 on the x-axis, and y1 on the y-axis
-    *unused and non-tested function*
+    warning : y0 and y1 must be of the same length
+    --IN:
+    y0 : array of absisses of points (array[float/int])
+    y1 : array of ordinates of points (array[float/int])
+    xlabel : name of the x-axis (string) default = ""
+    ylabel : name of the y-axis (string) default = ""
+    name : name of the graph (string) default = "Graphe Sans Titre"
+    filename : name of the file where to store the final image of the graph, name whithout the extension (string) default = "untitledPlot"
+    -- OUT
+    returns nothing
     '''
+    # testing the length condition
+    if len(y0)!=len(y1):
+        print "error : y0 and y1 have different sizes"
+        return
     py.plotly.sign_in('KevinBienvenu','r8vjr5qj9n')
     trace0 = go.Histogram2d(x=y0, y=y1,  # @UndefinedVariable
                             histnorm='percent',
@@ -343,8 +362,11 @@ def createHistogram2D(y0,
                        )
     fig = go.Figure(data=data,layout=layout)  # @UndefinedVariable
     py.image.save_as(fig, filename+".png")
-    
+
 def drawLargeHistogram2D(filename):
+    '''
+    experimental function - do not use for general purpose !
+    '''
     nbLabel0 = 25
     nbLabel1 = 25
     with open(filename+".hist2d", "r") as fichier:

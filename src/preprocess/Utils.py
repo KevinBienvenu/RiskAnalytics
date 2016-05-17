@@ -21,6 +21,8 @@ drawArray(openfile, array, arrayName) : write in an openfile the values of an ar
 import datetime
 import Constants
 import time
+from sys import getsizeof
+import os
 
 def validateDate(txtDate0, txtDate1, txtDate2):
     '''
@@ -89,30 +91,35 @@ def validateDateError(txtDate):
     try:
         d = datetime.datetime.strptime(txtDate, '%Y-%m-%d').date()
         return d
-    except ValueError:
+    except:
         return None
         
 def nbMonthsBetweenDates(d0, d1):
     '''
     function that returns the number of months between two dates
     the order doesn't matter, d0 can be larger than d1.
+    returns -1 if an error is raised
     -- IN
     d0 : date of start (str or datetime.datetime or datetime.date)
     d1 : date of end (str or datetime.datetime or datetime.date)
     -- OUT
     number of month between the dates (positive int)
     '''
-    if isinstance(d0, str):
-        d0 = datetime.datetime.strptime(d0, '%Y-%m-%d').date()
-    if isinstance(d1, str):
-        d1 = datetime.datetime.strptime(d1, '%Y-%m-%d').date()
-    if isinstance(d0, datetime.datetime):
-        d0 = d0.date()
-    if isinstance(d1, datetime.datetime):
-        d1 = d1.date()
-    # the value of 30.45 is just because the exact calculation is a mess...
-    # furthermore, it works pretty well like that :)
-    return int(abs((d0-d1).days/30.45))
+    
+    try:
+        if isinstance(d0, str):
+            d0 = datetime.datetime.strptime(d0, '%Y-%m-%d').date()
+        if isinstance(d1, str):
+            d1 = datetime.datetime.strptime(d1, '%Y-%m-%d').date()
+        if isinstance(d0, datetime.datetime):
+            d0 = d0.date()
+        if isinstance(d1, datetime.datetime):
+            d1 = d1.date()
+        # the value of 30.45 is just because the exact calculation is a mess...
+        # furthermore, it works pretty well like that :)
+        return int(abs((d0-d1).days/30.45))
+    except:
+        return -1
 
 def validateMontant(montant):
     '''
@@ -122,13 +129,9 @@ def validateMontant(montant):
     montant : value of the montant to analyse (int)
     -- OUT
     s : result array of strings (string[])
-        - "pieceFormat" error in the datePiece format
-        - "echeanceFormat" error in the dateEcheance format
-        - "dernierPaiementFormat" error in the dateDernierPaiement format
-        - "inconsistentDates" error in the consistency: d0 > d1 or d0 > d2
-        - "monthDiff" error in the difference of months between dates d1 > d0 + monthDiff or d2 > d0 + monthDiff
-        - "minimalDate" error in the dates : d0 < dateMin
-        - "maximalDate" error in the dates : d0 > dateMax
+        - "format" error in the format
+        - "minimal" error in the value : montant < montantMin
+        - "maximal" error in the value : montant > montantMax
     '''
     if Constants.bclnMontantIntFormat:
         if not checkIntFormat(montant, Constants.bclnMontantNonNegativeValue,Constants.bclnMontantNonZeroValue):
@@ -212,7 +215,26 @@ def updateProgress(compt):
     compt = (i,percent,total,deltap)
     return compt               
                     
-                    
+def printMemoryUsage(tab):
+    print ""
+    print "================"
+    print "= Memory Usage ="  
+    print "================"    
+    print ""
+    print "number of variables :",len(tab)
+    print ""
+    s=0
+    for var in tab:
+        print var  
+    print ""
+    print "total memory usage :", memory_usage_psutil()
+    
+def memory_usage_psutil():
+    # return the memory usage in MB
+    import psutil
+    process = psutil.Process(os.getpid())
+    mem = process.memory_info()[0] / float(2 ** 20)
+    return mem        
         
 
 

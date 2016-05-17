@@ -7,6 +7,12 @@ Created on 5 Apr 2016
 Module containing functions extracting informations from the
 file 'cameliaBalAG.csv' 
 
+All tests in module preprocessTest must pass to properly use the function
+of this module. These tests include the functions from the modules:
+- FTPTools : for the downloading and importing
+- DrawingTools : for the export of graphs and histograms
+- Utils : for other minor functions
+
 === Part I : Import of the data
         Imports and functions that get files and extract dataframe out of csv files
 
@@ -2006,13 +2012,14 @@ def AnalyzingEffectifOverCapital(csvetab):
     DrawingTools.saveHistogram2D(y0=ya, y1=yb, xlabel="capital", ylabel="effectif", name="Effectif selon capital (nettoyé)", filename="02_effectif_over_capital_clean")
           
 ''' VI - Scripts and Global Functions '''
-def importAndCleanCsv(toPrint = False, ftp = False):
+def importAndCleanCsv(toPrint = False, ftp = False, toSave = False):
     '''
     Function that process the data:
-    importing, cleaning and analysing
+    importing, cleaning and analysing and eventually save the dataframe
     -- IN
     toPrint : boolean to show the log of the cleaning process (boolean) default: True
     ftp : boolean to choose between local and remote data (boolean) default: False
+    toSave : boolean that settles if the final dataframe must be saved (boolean) default: False
     -- OUT 
     csvinput : the cleaned dataframe (pandas.Dataframe)
     '''
@@ -2031,6 +2038,13 @@ def importAndCleanCsv(toPrint = False, ftp = False):
     csvinput = cleaningEntrepId(csvinput, toPrint)
     Utils.printTime(startTime)
     print ""
+    if toSave:
+        # saving the resulting Dataframe
+        os.chdir(os.path.join("..",".."))
+        csvinput.to_csv(path_or_buff = "cameliaBalAGKevin.csv",sep="\t",columns=csvinput.columns)
+        print "file saved",
+        Utils.printTime(startTime)
+        print ""
     return csvinput
 
 def importAndAnalyseCsv(toPrint = False, toDrawGraph = True, ftp = False):

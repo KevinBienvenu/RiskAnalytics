@@ -7,9 +7,15 @@ Created on 5 Apr 2016
 '''
 import pandas as pd
 import numpy as np
-from PaiementDataExtraction import *
+from preprocess.CameliaBalAGPreprocess import *
+import FTPTools
 
 
+d = {'one' : pd.Series([1., 2., 3., 4.]),'two' : pd.Series([1., 2., 3., 5.])}
+df = pd.DataFrame(d)
+print df
+
+FTPTools.storeFtplib(df, toPrint=True)
 # printConfiguration(False)
 
 # importAndAnalyseCsv(True,False,ftp=True)
@@ -36,7 +42,7 @@ from PaiementDataExtraction import *
 # csvEtab = getCsvEtab(csvinput)
 # prepareInput("hist2d")
 # AnalyzingEffectifOverCapital(csvEtab)
-printLastGraphs("hist2d")
+# printLastGraphs("hist2d")
 
 # p = pd.DataFrame(np.random.randint(0,10,size=(5,2)), columns=['1','2'])
 # q = pd.DataFrame(np.random.randint(0,10,size=(5,2)), columns=['1','4'])
