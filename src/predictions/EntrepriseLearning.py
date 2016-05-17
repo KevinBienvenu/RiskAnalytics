@@ -131,22 +131,22 @@ def preprocessData(toExportCsv = False):
     Y = []
     # importing the BalAG file
     Utils.printMemoryUsage(globals())
-    csvinput = CameliaBalAGPreprocess.importAndCleanCsv(toPrint=False, ftp=True)
+    csvinput = CameliaBalAGPreprocess.importAndCleanCsv(toPrint=False, ftp=False, toSave=False)
     Utils.printMemoryUsage(globals())
     del csvinput['montantLitige']
     del csvinput['devise']
     del csvinput['dateInsert']
     Utils.printMemoryUsage(globals())
     compt = Utils.initProgress(csvinput,1)
-    for line in csvinput[['entrep_id','datePiece','dateEcheance','dateDernierPaiement','montantPieceEur']].values:
+    for line in csvinput.itertuples():
         compt = Utils.updateProgress(compt)
-        entrep_id.append(int(line[0]))
-        dates.append(int(line[1][:4]))
-        montant = int(line[4])
+        entrep_id.append(int(line[1]))
+        dates.append(int(line[2][:4]))
+        montant = int(line[5])
         logmontant = math.log10(montant)
-        echeance = (datetime.datetime.strptime(line[2],"%Y-%m-%d").date()-datetime.datetime.strptime(line[1],"%Y-%m-%d").date()).days
+        echeance = (datetime.datetime.strptime(line[3],"%Y-%m-%d").date()-datetime.datetime.strptime(line[2],"%Y-%m-%d").date()).days
         X.append([echeance,montant,logmontant])
-        Y.append(-1 if line[3]=="0000-00-00" else 1)
+        Y.append(-1 if line[4]=="0000-00-00" else 1)
     print ""
     print "cleaning the memory",
     del csvinput['datePiece']

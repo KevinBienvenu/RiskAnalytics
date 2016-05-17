@@ -51,6 +51,7 @@ def validateDate(txtDate0, txtDate1, txtDate2):
     if date1 == None:
         result.append("echeanceFormat")
     date2 = validateDateError(txtDate2)
+    print "boolean DateDernierPaiementFormat :",Constants.bclnDateDernierPaiementFormat
     if date2 == None and Constants.bclnDateDernierPaiementFormat :
         result.append("dernierPaiementFormat")
     if date0 == None or date1 == None:
@@ -155,15 +156,18 @@ def checkIntFormat(i, isNonNegative=False, isNonZero=False):
     -- OUT
     b : the result of the check (boolean) return true if everything is ok
     """    
+    b = True
     try:
         j = int(i)
-        b = True
-        if isNonNegative:
-            b = b and j>=0
-        if isNonZero:
-            b = b and j!=0
     except:
         b = False
+    print b
+    if isNonNegative:
+        b = (b and j>=0)
+    print "isNonNegative:",isNonNegative, b
+    if isNonZero:
+        b = (b and j!=0)
+    print "isNonZero:",isNonZero,b
     return b
         
 def printTime(startTime):

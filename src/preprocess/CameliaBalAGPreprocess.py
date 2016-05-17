@@ -345,8 +345,7 @@ def cleaningDates(csvinput, toPrint = True):
         print "error : No column to analyse - dateDernierPaiement"
         return csvinput   
     # importing column
-    column = np.array(csvinput[['datePiece','dateEcheance','dateDernierPaiement']].values)
-    nbEntries = len(column.T[0])
+    nbEntries = len(csvinput)
     rowToDrop = []
     
     # counting problems
@@ -359,9 +358,9 @@ def cleaningDates(csvinput, toPrint = True):
     comptMinimal = 0
     comptMaximal = 0
     ind = 0
-    for c in column:
+    for c in csvinput.itertuples():
         # validating the dates
-        s = Utils.validateDate(c[0], c[1], c[2])      
+        s = Utils.validateDate(c[2], c[3], c[4])      
         if len(s)>0:
             compt += 1
             rowToDrop.append(ind)

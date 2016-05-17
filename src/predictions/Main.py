@@ -6,5 +6,6 @@ Created on 13 mai 2016
 '''
 
 import EntrepriseLearning
-  
-EntrepriseLearning.preprocessData(True)
+   
+EntrepriseLearning.preprocessData(toExportCsv=True)
+

@@ -15,7 +15,10 @@ d = {'one' : pd.Series([1., 2., 3., 4.]),'two' : pd.Series([1., 2., 3., 5.])}
 df = pd.DataFrame(d)
 print df
 
-FTPTools.storeFtplib(df, toPrint=True)
+for row in df.itertuples():
+    print(row[1])
+
+# FTPTools.storeFtplib(df, toPrint=True)
 # printConfiguration(False)
 
 # importAndAnalyseCsv(True,False,ftp=True)

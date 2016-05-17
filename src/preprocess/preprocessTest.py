@@ -5,12 +5,21 @@ Created on 19 avr. 2016
 @author: Kévin Bienvenu
 '''
 
+import datetime
+from ftplib import FTP_TLS
+import os
 import unittest
-from FTPTools import *
-from DrawingTools import *
-from preprocess.CameliaBalAGPreprocess import *
-from Utils import *
+
+import pandas as pd
+import plotly.plotly as py
+
 import Constants
+from FTPTools import getAccount, retrieveFtplib
+from preprocess import FTPTools, DrawingTools, Utils
+from preprocess.CameliaBalAGPreprocess import cleaningEntrepId, cleaningDates, \
+    cleaningMontant, cleaningOther, analyzingDates, analyzingEntrepId, \
+    analyzingMontant, analyzingOthers, analyzingComplete
+from preprocess.Utils import validateDateError
 
 
 class TestFTPTools(unittest.TestCase):
@@ -317,7 +326,9 @@ class TestUtils(unittest.TestCase):
         montant = 0
         self.assertEqual(Utils.validateMontant(montant), "format")
         Constants.bclnMontantNonZeroValue = False
-        self.assertEqual(Utils.validateMontant(montant), "")
+        s = Utils.validateMontant(montant)
+        print s
+        self.assertEqual(s, "")
         Constants.bclnMontantNonNegativeValue = False
         montant = -1
         self.assertEqual(Utils.validateMontant(montant), "")
