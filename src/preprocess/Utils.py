@@ -21,6 +21,8 @@ drawArray(openfile, array, arrayName) : write in an openfile the values of an ar
 import datetime
 import Constants
 import time
+from sys import getsizeof
+import os
 
 def validateDate(txtDate0, txtDate1, txtDate2):
     '''
@@ -213,7 +215,26 @@ def updateProgress(compt):
     compt = (i,percent,total,deltap)
     return compt               
                     
-                    
+def printMemoryUsage(tab):
+    print ""
+    print "================"
+    print "= Memory Usage ="  
+    print "================"    
+    print ""
+    print "number of variables :",len(tab)
+    print ""
+    s=0
+    for var in tab:
+        print var  
+    print ""
+    print "total memory usage :", memory_usage_psutil()
+    
+def memory_usage_psutil():
+    # return the memory usage in MB
+    import psutil
+    process = psutil.Process(os.getpid())
+    mem = process.memory_info()[0] / float(2 ** 20)
+    return mem        
         
 
 

@@ -2012,13 +2012,14 @@ def AnalyzingEffectifOverCapital(csvetab):
     DrawingTools.saveHistogram2D(y0=ya, y1=yb, xlabel="capital", ylabel="effectif", name="Effectif selon capital (nettoyé)", filename="02_effectif_over_capital_clean")
           
 ''' VI - Scripts and Global Functions '''
-def importAndCleanCsv(toPrint = False, ftp = False):
+def importAndCleanCsv(toPrint = False, ftp = False, toSave = False):
     '''
     Function that process the data:
-    importing, cleaning and analysing
+    importing, cleaning and analysing and eventually save the dataframe
     -- IN
     toPrint : boolean to show the log of the cleaning process (boolean) default: True
     ftp : boolean to choose between local and remote data (boolean) default: False
+    toSave : boolean that settles if the final dataframe must be saved (boolean) default: False
     -- OUT 
     csvinput : the cleaned dataframe (pandas.Dataframe)
     '''
@@ -2037,6 +2038,13 @@ def importAndCleanCsv(toPrint = False, ftp = False):
     csvinput = cleaningEntrepId(csvinput, toPrint)
     Utils.printTime(startTime)
     print ""
+    if toSave:
+        # saving the resulting Dataframe
+        os.chdir(os.path.join("..",".."))
+        csvinput.to_csv(path_or_buff = "cameliaBalAGKevin.csv",sep="\t",columns=csvinput.columns)
+        print "file saved",
+        Utils.printTime(startTime)
+        print ""
     return csvinput
 
 def importAndAnalyseCsv(toPrint = False, toDrawGraph = True, ftp = False):

@@ -3,6 +3,9 @@
 Created on 15 avr. 2016
 
 @author: Kevin Bienvenu
+
+== Module encore en chantier ==
+
 '''
 
 import datetime
@@ -127,7 +130,13 @@ def preprocessData(toExportCsv = False):
     X = []
     Y = []
     # importing the BalAG file
+    Utils.printMemoryUsage(globals())
     csvinput = CameliaBalAGPreprocess.importAndCleanCsv(toPrint=False, ftp=True)
+    Utils.printMemoryUsage(globals())
+    del csvinput['montantLitige']
+    del csvinput['devise']
+    del csvinput['dateInsert']
+    Utils.printMemoryUsage(globals())
     for line in csvinput[['entrep_id','datePiece','dateEcheance','dateDernierPaiement','montantPieceEur']].values:
         entrep_id.append(int(line[0]))
         dates.append(int(line[1][:4]))
