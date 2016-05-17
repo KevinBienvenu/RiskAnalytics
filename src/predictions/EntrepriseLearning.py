@@ -128,7 +128,9 @@ def preprocessData(toExportCsv = False):
     Y = []
     # importing the BalAG file
     csvinput = PaiementDataExtraction.importAndCleanCsv(toPrint=False, ftp=True)
+    compt = Utils.initProgress(csvinput,1)
     for line in csvinput[['entrep_id','datePiece','dateEcheance','dateDernierPaiement','montantPieceEur']].values:
+        compt = Utils.updateProgress(compt)
         entrep_id.append(int(line[0]))
         dates.append(int(line[1][:4]))
         montant = int(line[4])
@@ -136,10 +138,14 @@ def preprocessData(toExportCsv = False):
         echeance = (datetime.datetime.strptime(line[2],"%Y-%m-%d").date()-datetime.datetime.strptime(line[1],"%Y-%m-%d").date()).days
         X.append([echeance,montant,logmontant])
         Y.append(-1 if line[3]=="0000-00-00" else 1)
+    print ""
+    print "cleaning the memory",
     del csvinput['datePiece']
     del csvinput['dateEcheance']
     del csvinput['dateDernierPaiement']
     del csvinput['montantPieceEur']
+    print "... done"
+    print ""
     # importing the Etab file
     dicCsvEtab = PaiementDataExtraction.getAndPreprocessCsvEtab(csvinput)
     rowsToDrop = []
