@@ -2041,8 +2041,9 @@ def importAndCleanCsv(toPrint = False, ftp = False, toSave = False):
     if toSave:
         # saving the resulting Dataframe
         os.chdir(os.path.join("..",".."))
-        csvinput.to_csv(path_or_buff = "cameliaBalAGKevin.csv",sep="\t",columns=csvinput.columns)
-        print "file saved",
+        with open("cameliaBalAGKevin.csv","w") as fichier:
+            fichier.write(csvinput.to_csv(path_or_buff = None ,sep="\t"))
+        print "file saved =>",
         Utils.printTime(startTime)
         print ""
     return csvinput

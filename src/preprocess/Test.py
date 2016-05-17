@@ -11,14 +11,16 @@ from preprocess.CameliaBalAGPreprocess import *
 import FTPTools
 
 
-d = {'one' : pd.Series([1., 2., 3., 4.]),'two' : pd.Series([1., 2., 3., 5.])}
-df = pd.DataFrame(d)
-print df
-
-FTPTools.storeFtplib(df, toPrint=True)
+# d = {'one' : pd.Series([1., 2., 3., 4.]),'two' : pd.Series([1., 2., 3., 5.])}
+# df = pd.DataFrame(d)
+# print df
+# 
+# FTPTools.storeFtplib(df, toPrint=True)
 # printConfiguration(False)
 
-# importAndAnalyseCsv(True,False,ftp=True)
+importAndCleanCsv(toPrint=True, ftp=True, toSave=True)
+
+# csvinput = importCsv("cameliaBalAGKevin.csv")
 
 
 # csvEtab = FTPTools.retrieveFtplib("cameliaScores.csv.bz2", compression = "bz2", toPrint=True)
