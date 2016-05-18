@@ -124,90 +124,41 @@ def preprocessData(toExportCsv = False):
     X : vector of features
     Y : vector of observations
     '''
-    # initializing variables
-    entrep_id = []
-    dates = []
-    X = []
-    Y = []
+   
     # importing the BalAG file
-    Utils.printMemoryUsage(globals())
-    csvinput = CameliaBalAGPreprocess.importAndCleanCsv(toPrint=False, ftp=False, toSave=False)
-    Utils.printMemoryUsage(globals())
+    csvinput = CameliaBalAGPreprocess.importAndCleanCsv(toPrint=False, ftp=True, toSave=False)
     del csvinput['montantLitige']
     del csvinput['devise']
     del csvinput['dateInsert']
-    Utils.printMemoryUsage(globals())
-    compt = Utils.initProgress(csvinput,1)
-    for line in csvinput.itertuples():
-        compt = Utils.updateProgress(compt)
-        entrep_id.append(int(line[1]))
-        dates.append(int(line[2][:4]))
-        montant = int(line[5])
-        logmontant = math.log10(montant)
-        echeance = (datetime.datetime.strptime(line[3],"%Y-%m-%d").date()-datetime.datetime.strptime(line[2],"%Y-%m-%d").date()).days
-        X.append([echeance,montant,logmontant])
-        Y.append(-1 if line[4]=="0000-00-00" else 1)
-    print ""
-    print "cleaning the memory",
+    log10abs = lambda x : math.log10(abs(x))
+    csvinput['logMontant'] = csvinput.montantPieceEur.apply(log10abs)
+    csvinput['echeance'] = (csvinput.dateEcheance - csvinput.datePiece).astype('timedelta64[D]')
+    csvinput['Y'] = csvinput.dateDernierPaiement.notnull()
+    csvinput['year'] = csvinput.datePiece.dt.year
     del csvinput['datePiece']
     del csvinput['dateEcheance']
     del csvinput['dateDernierPaiement']
-    del csvinput['montantPieceEur']
     print "... done"
     print ""
     # importing the Etab file
-    dicCsvEtab = CameliaBalAGPreprocess.getAndPreprocessCsvEtab(csvinput)
-    rowsToDrop = []
-    # merging files and removing incomplete rows
-    compt = Utils.initProgress(X,1)
-    for i in range(len(X)):
-        compt = Utils.updateProgress(compt)
-        if not(entrep_id[i] in dicCsvEtab):
-            rowsToDrop.append(i)
-            continue
-        for l in range(len(dicCsvEtab[entrep_id[i]][0])):
-            X[i].append(dicCsvEtab[entrep_id[i]][0][l])
-    print "missing information :",100.0*len(rowsToDrop)/len(X),"%"
-    del X[rowsToDrop]
-    del Y[rowsToDrop]
-    del entrep_id[rowsToDrop]
-    del dates[rowsToDrop]
-    # importing score file
-    dicCsvScore = CameliaBalAGPreprocess.getAndPreprocessCsvScore(csvinput)
-    del csvinput
-    rowsToDrop = []
-    # merging files and removing incomplete rows
-    for i in range(len(X)):
-        if not(entrep_id[i] in dicCsvScore):
-            rowsToDrop.append(i)
-        if dates[i] in dicCsvScore[entrep_id[i]]:
-            X[i]+=dicCsvScore[entrep_id[i]][dates[i]]
-        elif dates[i]-1 in dicCsvScore[entrep_id[i]]:
-            X[i]+=dicCsvScore[entrep_id[i]][dates[i]-1]
-        else:
-            rowsToDrop.append(i)
-    print "missing information :",100.0*len(rowsToDrop)/len(X),"%"
-    del X[rowsToDrop]
-    del Y[rowsToDrop]
-    del entrep_id[rowsToDrop]
-    del dates[rowsToDrop]
+    csvEtab = CameliaBalAGPreprocess.getAndPreprocessCsvEtab(csvinput)
+    csvinput.join(csvEtab,inplace=True)
+    del csvEtab
+#     csvScore = CameliaBalAGPreprocess.getAndPreprocessCsvScore(csvinput)
+    print csvinput
     
-    # creating the csvfile
-    columns = ['echeance','montant','logmontant', \
-               'capital','dateCreation','effectif', \
-               'scoreSolv','scoreZ','scoreCH','scoreAltman']
-    if toExportCsv:
-        with open("preprocessedDataBalAGX.csv","w") as csvfile:
-            writer = csv.writer(csvfile, delimiter='\t')
-            writer.writerow(columns)
-            for i in range(len(X)):
-                writer.writerow(X[i][1:])
-        with open("preprocessedDataBalAGY.csv","w") as csvfile:
-            writer = csv.writer(csvfile, delimiter='\t')
-            writer.writerow(['Y'])
-            for i in range(len(X)):
-                writer.writerow(Y[i])
-    return X,Y
+#     if toExportCsv:
+#         with open("preprocessedDataBalAGX.csv","w") as csvfile:
+#             writer = csv.writer(csvfile, delimiter='\t')
+#             writer.writerow(columns)
+#             for i in range(len(X)):
+#                 writer.writerow(X[i][1:])
+#         with open("preprocessedDataBalAGY.csv","w") as csvfile:
+#             writer = csv.writer(csvfile, delimiter='\t')
+#             writer.writerow(['Y'])
+#             for i in range(len(X)):
+#                 writer.writerow(Y[i])
+#     return X,Y
        
 def outOfNowhere(cumm,val):
     rd = random.random()

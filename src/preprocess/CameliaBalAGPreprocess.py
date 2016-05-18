@@ -421,57 +421,7 @@ def cleaningMontant(csvinput):
     
     
     return csvinput        
-    
-def cleaningOther(csvinput, toPrint = True):
-    '''
-    function that cleans the content of the column 'montantLitige'
-    according to the behavior described in Constants.
-    -- IN
-    csvinput : pandas dataframe containing the Payment csv file (dataframe)
-    toPrint : boolean that settles the display of computed informations (boolean) (default: False)
-    -- OUT
-    returns csvinput (dataframe)
-    '''        
-    print "=== Starting Cleaning of montantLitige column ==="
-    if toPrint:
-        print ""
-    # validating the input
-    if csvinput is None or len(csvinput)==0:
-        print "No Data Remaining"
-        print ""
-        return csvinput
-    if not 'montantLitige' in csvinput.columns:
-        print "error : No column to analyse - montantLitige"
-        return csvinput 
-    # importing column
-    column = csvinput['montantLitige']
-    nbEntries = len(column)
-    rowToDrop = []
-    
-    if Constants.bclnMontantLitigeNonZero:
-        ind = 0
-        compt = 0
-        for c in column:
-            if c==0:
-                compt += 1
-                rowToDrop.append(ind)
-            ind += 1
-        if toPrint:
-            print "montant litiges values must be non-zero values"
-            print "   number of litiges that equals zero",compt,"-",100.0*compt/nbEntries,"%"
-    
-    # preprocess data
-    if(len(rowToDrop)>0):
-        csvinput.drop(csvinput.index[rowToDrop], inplace = True)
-    if toPrint:
-        print "==> preprocess completed"
-        print "  number of deleted rows :", len(rowToDrop)
-        print "  new amount of rows :", len(csvinput)
-        print ""
-        print ""
-            
-    return csvinput  
-       
+      
 ''' III - Analyzing Functions '''
 def analyzingEntrepId(csvinput, toSaveGraph = False, toDrawGraphOld = False):
     '''
@@ -1516,7 +1466,7 @@ def analyzingEntrepScore():
 
     ## IMPORTING SCORE DATA
     print "importing the Score csv",
-    csvScore = getCsvScores()
+    csvScore = getAndPreprocessCsvScore()
     print "... done:",
     interval = time.time() - startTime
     print interval, 'sec'
@@ -1672,7 +1622,7 @@ def analyzingEntrepEtab():
     
     # importing Etab file
     print "retrieving csvEtab file",
-    csvEtab = getCsvEtab()
+    csvEtab = getAndPreprocessCsvEtab()
     print "... done:",
     interval = time.time() - startTime
     print interval, 'sec'
@@ -1981,7 +1931,6 @@ def importAndCleanCsv(toPrint = False, ftp = False, toSave = False):
     csvinput['dateDernierPaiement'] = pd.to_datetime(csvinput['dateDernierPaiement'], format='%Y-%m-%d', errors='coerce')   
     # preprocess the dataframe
     csvinput = cleaningDates(csvinput)
-#     csvinput = cleaningOther(csvinput)
     csvinput = cleaningMontant(csvinput)
     csvinput = cleaningEntrepId(csvinput)
     Utils.printTime(startTime)
@@ -2018,7 +1967,6 @@ def importAndAnalyseCsv(toPrint = False, toDrawGraph = True, ftp = False):
         
     # preprocess the dataframe
     csvinput = cleaningDates(csvinput, toPrint)
-    csvinput = cleaningOther(csvinput, toPrint)
     csvinput = cleaningMontant(csvinput, toPrint)
     csvinput = cleaningEntrepId(csvinput, toPrint)
     if toDrawGraph:
@@ -2181,32 +2129,4 @@ def printConfiguration(globalConfig = False):
     if globalConfig or bclnMontantLitigeNonZero:
         print "clean according to a zero-valued montantLitige :",bclnMontantLitigeNonZero
       
-def sideAnalysis(ftp = True):
-    """
-    function that compare the local or remote file to other remote files
-    of the database to see the differences in the entrep_id columns.
-    -- IN
-    ftp : boolean that settles if we compare the local or remote version of CameliaBalAG - 
-        True for the remote version (boolean) default : True
-    -- OUT
-    returns nothing
-    """
-    # importing the csv file and creating the datframe
-    if(ftp):
-        csvinput = importFTPCsv()
-    else:
-        csvinput = importCsv(usecols=['entrep_id'])
-    analyzingIdCorresponding(csvinput, "CameliaEtab.csv.gz")
-#     analyzingIdCorresponding(csvinput, "CameliaBilans.csv.gz")
-
-# path = Constants.path
-# os.chdir(path)
-
-
-
-# cleaningCsv(ftp = True)  
-
-# printLastGraphs()
-
-# sideAnalysis(True)
 

@@ -7,6 +7,7 @@ Created on 18 mai 2016
 
 import pandas as pd
 import numpy as np
+import math
 
 df = pd.DataFrame({'A' : ['foo', 'bar', 'foo', 'bar',
                           'foo', 'bar', 'foo', 'foo'],
@@ -17,14 +18,19 @@ df = pd.DataFrame({'A' : ['foo', 'bar', 'foo', 'bar',
 
 print df
 
-grouped = df.groupby('A')
+# grouped = df.groupby('A')
+# 
+# fmin = lambda x: pd.Series([x.min()]*len(x))
+# fmax = lambda x: pd.Series([x.max()]*len(x))
+# 
+# df['C'] = grouped['C'].transform(fmin)
+# df['D'] = grouped['D'].transform(fmax)
+# 
+# df = grouped.head(1)
+# 
+# print df
 
-fmin = lambda x: pd.Series([x.min()]*len(x))
-fmax = lambda x: pd.Series([x.max()]*len(x))
-
-df['C'] = grouped['C'].transform(fmin)
-df['D'] = grouped['D'].transform(fmax)
-
-df = grouped.head(1)
+log10abs = lambda x : math.log10(abs(x))
+df['E'] = df.C.apply(log10abs)
 
 print df
