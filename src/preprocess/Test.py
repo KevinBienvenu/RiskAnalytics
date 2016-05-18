@@ -13,7 +13,7 @@ import FTPTools
 
 
 
-importAndCleanCsv(toPrint=True, ftp=True, toSave=True)
+# importAndCleanCsv(toPrint=True, ftp=True, toSave=True)
 
 # csvinput = importCsv("cameliaBalAGKevin.csv")
 
@@ -35,7 +35,7 @@ importAndCleanCsv(toPrint=True, ftp=True, toSave=True)
 # analyzingEntrepEtab()
 # printLastGraphs("etabFile")
 
-# csvinput = importAndCleanCsv()
+csvinput = importAndCleanCsv(toPrint = False, ftp = True, toSave = False)
 # csvEtab = getCsvEtab(csvinput)
 # prepareInput("hist2d")
 # AnalyzingEffectifOverCapital(csvEtab)

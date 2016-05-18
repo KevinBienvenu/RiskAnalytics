@@ -31,6 +31,9 @@ of this module. These tests include the functions from the modules:
 === Part VI - Scripts and Global Functions
         Functions and pipelines of global analysis function
 '''
+from numpy.core.operand_flag_tests import inplace_add
+from compiler.ast import Const
+from preprocess import Constants
 
 
 ''' I - Import of the data  '''
@@ -39,6 +42,7 @@ import datetime
 import math
 import os
 import time
+import 
 
 import Constants
 import DrawingTools
@@ -58,7 +62,7 @@ from Constants import bclnIdIntFormat, bclnIdMinimalBillsNumber, \
     clnMontMinimalValue, bclnMontMaximalValue, clnMontMaximalValue, \
     bclnMontantLitigeNonZero
 
-def importCsv(filename = 'cameliaBalAG_extraitRandom.csv',sep='\t',usecols = None,addPaidBill = False):
+def importCsv(filename = 'cameliaBalAG_extraitRandom.csv',sep='\t',usecols = None,dtype=None,addPaidBill = False):
     '''
     function that imports the content of the csv file. 
     The csv file must be stored stored locally.
@@ -75,7 +79,7 @@ def importCsv(filename = 'cameliaBalAG_extraitRandom.csv',sep='\t',usecols = Non
     os.chdir(os.path.join("..",".."))
     # reading the local file
     try: 
-        csvinput = pd.read_csv(filename,sep=sep,usecols = usecols)
+        csvinput = pd.read_csv(filename,sep=sep,usecols = usecols,dtype=dtype)
     except:
         print "error : impossible to read the file"
         return None
@@ -91,7 +95,7 @@ def importCsv(filename = 'cameliaBalAG_extraitRandom.csv',sep='\t',usecols = Non
     os.chdir(os.path.join("src","preprocess"))
     return csvinput
 
-def importFTPCsv(filename = 'cameliaBalAG.csv.gz',sep='\t',usecols = None,addPaidBill = False):
+def importFTPCsv(filename = 'cameliaBalAG.csv.gz',sep='\t',usecols = None,dtype = None,addPaidBill = False):
     '''
     function that imports the content of the csv file into the global
     variable csvinput. the file is downloaded from the remote ftp via
@@ -106,7 +110,7 @@ def importFTPCsv(filename = 'cameliaBalAG.csv.gz',sep='\t',usecols = None,addPai
     returns the dataframe out of the csv file
     '''
     # importing the remote file
-    csvinput = FTPTools.retrieveFtplib(filename, usecols=usecols, dtype=Constants.dtype, compression="gz")
+    csvinput = FTPTools.retrieveFtplib(filename, usecols=usecols, dtype=dtype, compression="gz")
     if csvinput is None:
         print "error : impossible to import the dataframe"
         return None
@@ -121,104 +125,148 @@ def importFTPCsv(filename = 'cameliaBalAG.csv.gz',sep='\t',usecols = None,addPai
             csvinput['paidBill'] = pd.Series(paidBill, index=csvinput.index)
     return csvinput
 
-def getCsvEtab(csvinput=None):
-    '''
-    function that imports the Etab file from the remote ftp server
-    if csvinput is not None, it then deletes useless rows
-    --IN:
-    csvinput : pandas.Dataframe which at least 'entrep_id' in columns (pandas.dataframe) default = None
-    -- OUT:
-    csvEtab : pandas.Dataframe containing the file Etab.
-    '''
-    usecols = ['entrep_id','capital','DCREN','EFF_ENT']
-    # importing the file
-    csvEtab = FTPTools.retrieveFtplib("ProcessedData/cameliaEtabKevin.csv.gz", compression="gz",usecols=usecols,toPrint=False,sep=";")
-    if csvinput is None:
-        return csvEtab
-    # removing useless rows if csvinput is not None
-    rowToDrop = []
-    column = csvinput['entrep_id']
-    i = 0
-    total = len(csvEtab)
-    print "processing csvEtab",
-    for line in csvEtab.values:
-        if not line[0] in column:
-            rowToDrop.append(i)
-        i+=1
-    csvEtab.drop(csvEtab.index[rowToDrop], inplace = True)
-    print "done :",len(rowToDrop),"removed rows -",100.0*len(rowToDrop)/total,"%"
-    return csvEtab
-
-def getCsvScores():
-    usecols = ['entrep_id','dateBilan','sourceModif','scoreSolv','scoreZ','scoreCH','scoreAltman']
-    csvScore = FTPTools.retrieveFtplib("cameliaScores.csv.bz2", compression = "bz2", usecols=usecols, toPrint=False)
-#     csvScore.set_index('entrep_id',inplace=True)
-    return csvScore
-
 def getAndPreprocessCsvEtab(csvinput):
     '''
-    function that preprocesses the csvEtab file, keeping only one row by entreprise
-    and returning a dictionary containing these informations
+    function that imports the Etab file from the remote ftp server
     
-    !! First prototype : only keep the first matching row so must be inaccurate - to be improved    
+    if csvinput is not None, it then deletes useless rows
+    according to the entrep_id that must be in the csvinput file
+    and the dates that must be in the proper date format "%Y%m%d"
+    it keeps only one row by entreprise according to the following criterias:
+    - 'DCREN' : we keep the minimal dateBilan for an entreprise over the whole set of etablissements
+    - 'EFF_ENT' : we keep the maximal effectif for an entreprise over the whole set of etablissements
+    - 'capital' : we keep the maximal capital for an entreprise over the whole set of etablissements
+
+    Note that therefore the date aren't taken into account for the capital and the effectif
+    If an entreprise grew a lot in a little time, there will be no difference between the two time-shifts.
+    This choice was made in regard to the distribution of the entreprises in the cameliaBalAG file, 
+    as most of the entreprises aren't present for more than three months; and knowing that joining
+    a precise and denoised capital and effectif to a precise timestamp was not that easy according to the data.
     
     -- IN:
-    csvetab: the pandas dataframe containing etab file and at least column entrep_id in pos 0 (pandas.Dataframe)
+    csvEtab: the pandas dataframe containing etab file and at least column entrep_id (pandas.Dataframe)
     -- OUT:
-    dicEntrep : dic linking entrep_id to info from the csvfile (dic{int:[object]})
+    csvEtab: the cleaned pandas dataFrame containing only one row per concerned entreprises (pandas.Dataframe)
+    returns None if an error occurs.
     '''
-    csvetab = getCsvEtab(csvinput)
-    entrep = np.unique(csvetab['entrep_id'].values)
-    dicEntrep = {}
-    for ent in entrep:
-        dicEntrep[ent] = []
-    del entrep
-    for line in csvetab.values:
-        if not(line[0] in dicEntrep):
-            continue
-        if len(dicEntrep[line[0]])==0:
-            dicEntrep[line[0]].append(line[1:])
-    missingEntreprises = 0
-    for ent in dicEntrep:
-        l = len(dicEntrep[ent])
-        if l==0:
-            missingEntreprises+=1
-    return dicEntrep       
- 
-def getAndPreprocessCsvScore(csvinput):  
-    '''
-    function that preprocesses the csvScore file, keeping only one row by entreprise
-    and returning a dictionary containing these informations
+
+    print "== loading csvEtab"
+    # setting parameters for the import of the dataframe
+    usecols = ['entrep_id','capital','DCREN','EFF_ENT']
+    dtype = {}
+    dtype['entrep_id'] = "uint32"
+    dtype['capital']   = "uint32"
+    dtype['EFF_ENT']   = "uint32"
+    dtype['DCREN']     = "string"
+    # importing the file
+    csvEtab = FTPTools.retrieveFtplib("ProcessedData/cameliaEtabKevin.csv.gz", compression="gz",
+                                      usecols=usecols,dtype=dtype,toPrint=False,sep=";")
+    print "   processing file",
+    totalIni = len(csvEtab)
+    # we remove wrong date input and convert the others
+    csvEtab.loc[~csvEtab['DCREN'].str.contains(r"^[12][90][0-9][0-9][01][0-9][0-3][0-9]$", na=True), 'DCREN'] = None
+    csvEtab['DCREN'] = pd.to_datetime(csvEtab['DCREN'], format='%Y%m%d', errors='coerce')   
+    csvEtab.dropna(axis=0, inplace=True)
     
+    # if no parameter csvinput was given, we just return the whole Dataframe
+    if csvinput is None:
+        # counting errors and displaying results
+        totalFin = len(csvEtab)
+        print "... done"
+        print "   %d removed rows - %d %\n" % (totalIni-totalFin,100.0*(totalIni-totalFin)/totalIni) 
+        return csvEtab
+    
+    # otherwise, we clean the file according to the entrep_id in the csvinput Dataframe
+    column = csvinput['entrep_id']
+    # we remove lines of cvsEtab that are not concerning entreprises from csvinput
+    csvEtab.loc[~csvEtab['entrep_id'].isin(column),['entrep_id']] = None    
+
+    # checking the validity of the result dataframe
+    if csvEtab is None or ['entrep_id','capital','DCREN','EFF_ENT'] not in csvEtab.columns:
+        print "error : invalid csvEtab file"
+        return None
+    
+    # grouping the csvEtab file according to 'entrep_id'
+    grouped = csvEtab.groupby('entrep_id')
+    # defining min() and max() lambda functions
+    fmin = lambda x: pd.Series([x.min()]*len(x))
+    fmax = lambda x: pd.Series([x.max()]*len(x))
+    # merging the rows
+    csvEtab['DCREN'] = grouped['DCREN'].transform(fmin)
+    csvEtab['capital'] = grouped['capital'].transform(fmax)
+    csvEtab['EFF_ENT'] = grouped['EFF_ENT'].transform(fmax)
+    # keeping only one row per entreprise
+    csvEtab = grouped.head(1)
+    
+    # counting errors and displaying results
+    totalFin = len(csvEtab)
+    print "... done"
+    print "   %d removed rows - %d %\n" % (totalIni-totalFin,100.0*(totalIni-totalFin)/totalIni)
+    
+    return csvEtab
+      
+def getAndPreprocessCsvScore(csvinput = None):  
+    '''
+    function that imports the Score file from the remote ftp server
+    it then deletes useless or wrong formatted rows 
+    the dates must be in the proper date format "%Y%m%d"
+    it then only keeps the 'bilans1' rows
     -- IN:
     csvinput: the pandas dataframe containing BalAG file and at least column entrep_id in pos 0 (pandas.Dataframe)
     -- OUT:
-    dicEntrep : dic linking entrep_id to info from the csvfile (dic{entrep_id(int):dic{year(int):[scores(float)]})
+    csvScore : pandas.Dataframe containing the file Score.
     '''
-    csvScore = getCsvScores()
+    print "== loading csvScore"
+    # setting parameters for the import of the dataframe
+    usecols = ['entrep_id','dateBilan','sourceModif','scoreSolv','scoreZ','scoreCH','scoreAltman']
+    dtype= {}
+    dtype['entrep_id'] = "uint32"
+    dtype['dateBilan'] = "string"
+    dtype['sourceModif'] = "string"
+    dtype['scoreSolv'] = "float16"
+    dtype['scoreZ'] = "float16"
+    dtype['scoreCH'] = "float16"
+    dtype['scoreAltman'] = "float16"
+    csvScore = FTPTools.retrieveFtplib("cameliaScores.csv.bz2", compression = "bz2", 
+                                       usecols=usecols, dtype = dtype, toPrint=False)
+    print "   processing file",
+    # cleaning according to the date column and converting remaning rows
+    csvScore.loc[~csvScore['dateBilan'].str.contains(r"^[0-3]?[0-9]/[01][0-9]/[12][90][0-9][0-9]$"),
+                 ['dateBilan']] = None
+    csvScore['DCREN'] = pd.to_datetime(csvScore['dateBilan'], format='%d/%m/%Y', errors='coerce')   
+    totalIni = len(csvScore)
+    csvScore.dropna(axis=0,inplace=True)
+    
+    # if the csvinput parameter was given in input, 
+    # the file is cleaned further to match the input
+    # if not, the file is returned this way
+    if csvinput is None:
+        # printing progress
+        totalFin = len(csvScore)
+        print "... done"
+        print "   %d removed rows - %d %\n" % (totalIni-totalFin,100.0*(totalIni-totalFin)/totalIni)
+        return csvScore
+    # keeping only the bilans1 rows
     csvScore = csvScore[csvScore.sourceModif=="bilans1"]
     # removing all years before 2010
-    csvScore = csvScore[csvScore.dateBilan.str[2:4]>=10]
-    # droping lines with empty dates
-    csvScore = csvScore[csvScore.dateBilan!="0000-00-00"]
-    # droping the useless columns
-    del csvScore['sourceModif']
+    csvScore = csvScore[csvScore.dateBilan.year>=2010]
+    column = csvinput['entrep_id']
+    # we remove lines of cvsScore that are not concerning entreprises from csvinput
+    csvScore.loc[~csvScore['entrep_id'].isin(column),['entrep_id']] = None
     
-    # importing csvinput and creating list of entreprises
-    entrep = np.unique(csvinput['entrep_id'].values)
-    dicEntrep = {}
-    for ent in entrep:
-        dicEntrep[ent] = {}
-        
-    # going through the csvScore file
-    for line in csvScore.values:
-        if not line[0] in dicEntrep:
-            continue
-        dicEntrep[line[0]][int(line[1][:4])] = line[2:]
-    return dicEntrep
+    # droping NaN rows and useless columns
+    del csvScore['sourceModif']
+    csvScore.dropna(axis=0, inplace=True)
+    
+    # printing final progress
+    totalFin = len(csvScore)
+    print "... done"
+    print "   %d removed rows - %d %\n" % (totalIni-totalFin,100.0*(totalIni-totalFin)/totalIni)
+    
+    return csvScore
     
 ''' II - Cleaning Functions '''
-def cleaningEntrepId(csvinput, toPrint = True):
+def cleaningEntrepId(csvinput):
     '''
     function that cleans the content of the first column 'entrep_id'
     according to the behaviors described in Constants and returns the cleaned dataframe
@@ -229,8 +277,7 @@ def cleaningEntrepId(csvinput, toPrint = True):
     csvinput : the cleaned dataframe (dataframe)
     '''
     print "=== Starting Cleaning of entrep_id column ==="
-    if toPrint:
-        print ""
+
     # checking if everything is all right with the input
     if csvinput is None or len(csvinput)==0:
         print "No Data Remaining"
@@ -239,82 +286,30 @@ def cleaningEntrepId(csvinput, toPrint = True):
     if not 'entrep_id' in csvinput.columns:
         print "error : No column to analyse - entrep_id"
         return csvinput
-    # initializing variables
-    #    dictionary linking entrep_id to concerned rows
-    entrepriseToRowsDict = {}
-    #    dictionary linking entrep_id to the number of bills
-    entrepriseToBillNumber = {}
-    entrepriseToDrop = []
-    rowToDrop = []
-        
-    # filling the previous dictionaries
-    ind = 0
-    comptErrorFormat = 0
-    for entreprise in csvinput['entrep_id'].values:
-        if Constants.bclnIdIntFormat:
-            if not Utils.checkIntFormat(entreprise, True, True):
-                rowToDrop.append(ind)
-                ind += 1
-                comptErrorFormat += 1
-                continue
-        if not entrepriseToRowsDict.has_key(entreprise):
-            entrepriseToRowsDict[entreprise] = []
-        entrepriseToRowsDict[entreprise].append(ind)
-        ind += 1
-    for entry in entrepriseToRowsDict.keys():
-        entrepriseToBillNumber[entry] = len(entrepriseToRowsDict[entry])
-    if toPrint:
-        print "total number of enterprises :", len(entrepriseToBillNumber)
-        print ""
-        if Constants.bclnIdIntFormat:
-            print "enterprises IDs must be positive int"
-            print "   number of errors :",comptErrorFormat,"-",100.0*comptErrorFormat/len(csvinput),"%" 
-            print ""
-        
-    # preprocess according to the id
-    if Constants.bclnIdMinimalIdValue or Constants.bclnIdMaximalIdValue:
-        compt = 0
-        for entreprise in entrepriseToBillNumber.keys():
-            if Constants.bclnIdMinimalIdValue and entreprise<Constants.clnIdMinimalIdValue:
-                entrepriseToDrop.append(entreprise)
-                compt += 1
-            if Constants.bclnIdMaximalIdValue and entreprise>Constants.clnIdMaximalIdValue:
-                entrepriseToDrop.append(entreprise)
-                compt += 1 
-        if toPrint:
-            s= "enterprises ids must be "+("above "+str('%.1e' % Constants.clnIdMinimalIdValue)+" " if Constants.bclnIdMinimalIdValue else "")
-            s = s + ("and " if Constants.bclnIdMaximalIdValue and Constants.bclnIdMinimalIdValue else "")
-            s = s + ("below "+str('%.1e' % Constants.clnIdMaximalIdValue)+" " if Constants.bclnIdMaximalIdValue else "")
-            print s
-            print "   incorrect Ids :",compt,"-",100.0*compt/len(entrepriseToRowsDict),"%"
-            print ""
-            
-    #preprocess according to the number of bills
+
+    # cleaning according to the 'entrep_id' int format
+    # cleaning according to the minimal id
+    # cleaning according to the maximal id
+    test = ( Constants.bclnIdIntFormat & (csvinput.entrep_id<=0)
+             | Constants.bclnIdMinimalIdValue & (csvinput.entrep_id<Constants.clnIdMinimalIdValue)
+             | Constants.bclnIdMaximalIdValue & (csvinput.entrep_id>Constants.clnIdMaximalIdValue)
+            )
+    
+    csvinput.loc[test] = None
+
+    # cleaning according to the number of bills
+    nbBills = csvinput.groupby('entrep_id').size()           
     if Constants.bclnIdMinimalBillsNumber:
-        compt = 0
-        for entreprise in entrepriseToBillNumber.keys():
-            if entrepriseToBillNumber[entreprise] < Constants.clnIdMinimalBillsNumber:
-                entrepriseToDrop.append(entreprise)
-                compt += 1
-        if toPrint:
-            print "enterprises must have at least", Constants.clnIdMinimalBillsNumber,"bills"
-            print "   enterprises without enough bills :",compt,"-",100.0*compt/len(entrepriseToRowsDict),"%"
-            print ""
+        csvinput.loc[~nbBills[csvinput['entrep_id']]>Constants.clnIdMinimalBillsNumber] = None
+    
+    totalIni = len(csvinput)
+    csvinput.dropna(axis=0,how='all',inplace=True)
+    totalFin = len(csvinput)
+    print "   ",str(totalIni-totalFin),"removed rows -",str(100.0*(totalIni-totalFin)/totalIni),"%\n"  
         
-    #performing preprocess
-    for entreprise in entrepriseToDrop:
-        for row in entrepriseToRowsDict[entreprise]:
-            rowToDrop.append(row)
-    csvinput.drop(csvinput.index[rowToDrop], inplace = True)
-    if toPrint:
-        print "==> preprocess completed"
-        print "   number of deleted rows :", len(rowToDrop)
-        print "   new amount of rows :", len(csvinput)
-        print ""
-        print ""
     return csvinput
 
-def cleaningDates(csvinput, toPrint = True):
+def cleaningDates(csvinput):
     '''
     function that cleans the content of the date columns
     'datePiece','dateEcheance','dateDernierPaiement'
@@ -327,12 +322,10 @@ def cleaningDates(csvinput, toPrint = True):
     '''
         
     print "=== Starting Cleaning of date columns ==="
-    if toPrint:
-        print ""
-         
+  
     # checking if everything is all right with the input
     if csvinput is None or len(csvinput)==0:
-        print "No Data Remaining"
+        print "error : No Data Remaining"
         print ""
         return csvinput
     if not 'datePiece' in csvinput.columns:
@@ -344,72 +337,49 @@ def cleaningDates(csvinput, toPrint = True):
     if not 'dateDernierPaiement' in csvinput.columns:
         print "error : No column to analyse - dateDernierPaiement"
         return csvinput   
-    # importing column
-    nbEntries = len(csvinput)
-    rowToDrop = []
+
     
-    # counting problems
-    compt = 0
-    comptPiece = 0
-    comptEcheance = 0
-    comptDernierPaiement = 0
-    comptInconsistent = 0
-    comptMonthDiff = 0
-    comptMinimal = 0
-    comptMaximal = 0
-    ind = 0
-    for c in csvinput.itertuples():
-        # validating the dates
-        s = Utils.validateDate(c[2], c[3], c[4])      
-        if len(s)>0:
-            compt += 1
-            rowToDrop.append(ind)
-        if "pieceFormat" in s:
-            comptPiece += 1
-        if "echeanceFormat" in s:
-            comptEcheance += 1
-        if "dernierPaiementFormat" in s:
-            comptDernierPaiement += 1
-        if "inconsistentDates" in s:
-            comptInconsistent += 1
-        if "monthDiff" in s:
-            comptMonthDiff += 1
-        if "minimalDate" in s:
-            comptMinimal += 1
-        if "maximalDate" in s:
-            comptMaximal += 1
-        ind += 1
-    if toPrint:
-        print "date format errors:", compt, "-", 100.0*compt/(nbEntries),"%"
-        if Constants.bclnDatePieceFormat:
-            print "   datePiece format errors:", comptPiece,"-",100.0*comptPiece/nbEntries,"%"
-        if Constants.bclnDateEcheanceFormat:
-            print "   dateEcheance format errors:", comptEcheance,"-",100.0*comptEcheance/nbEntries,"%"
-        if Constants.bclnDateDernierPaiementFormat:
-            print "   dateDernierPaiement format errors:", comptDernierPaiement,"-",100.0*comptDernierPaiement/nbEntries,"%"
-        if Constants.bclnDateInconsistent:
-            print "   inconsistent dates errors:", comptInconsistent,"-",100.0*comptInconsistent/nbEntries,"%"
-        if Constants.bclnDateMonthDiff:
-            print "   months difference errors:", comptMonthDiff,"-",100.0*comptMonthDiff/nbEntries,"%"
-        if Constants.bclnDateMinimalDate:
-            print "   minimal dates errors:", comptMinimal,"-",100.0*comptMinimal/nbEntries,"%"
-        if Constants.bclnDateMaximalDate:
-            print "   maximal dates errors:", comptMaximal,"-",100.0*comptMaximal/nbEntries,"%"
-        print ""
-        
+    # cleaning the data in one single test
+    # criterias for dropping
+    # - NaN date for datePiece (and bclnDatePieceFormat)
+    # - NaN date for dateEcheance (and bclnDateEcheanceFormat)
+    # - NaN date for dateDernierPaiement (and bclnDateDernierPaiementFormat)
+    # - Echeance or DernierPaiement date anterior to Piece (and bclnDateInconsistent)
+    # - Time gap between Echeance or DernierPaiement and Piece larger than threshold (and bclnDateMonthDiff)
+    # - datePiece before minimal date (and bclnDateMinimalDate)
+    # - datePiece after maximal date (and bclnDateMaximalDate)
+    test = ((Constants.bclnDatePieceFormat & csvinput.datePiece.isnull())
+            |(Constants.bclnDateEcheanceFormat & csvinput.dateEcheance.isnull())
+            |(Constants.bclnDateDernierPaiementFormat & csvinput.dateDernierPaiement.isnull())
+            |(Constants.bclnDateInconsistent
+               & csvinput.datePiece.notnull()
+               & ((csvinput.dateDernierPaiement.notnull()
+                    & (csvinput.dateDernierPaiement-csvinput.datePiece).astype('timedelta64[D]')<0)
+                  |(csvinput.dateEcheance.notnull() 
+                    & (csvinput.dateEcheance-csvinput.datePiece).astype('timedelta64[D]')<0) 
+                   ) 
+              ) 
+            | (Constants.bclnDateMonthDiff
+               & csvinput.datePiece.notnull() 
+               & ((csvinput.dateDernierPaiement.notnull() 
+                   & (csvinput.dateDernierPaiement-csvinput.datePiece).astype('timedelta64[M]')>Constants.clnDateMonthDiff) 
+                  |(csvinput.dateEcheance.notnull() 
+                    & (csvinput.dateEcheance-csvinput.datePiece).astype('timedelta64[M]')>Constants.clnDateMonthDiff)) 
+               ) 
+            | (Constants.bclnDateMinimalDate & csvinput.datePiece.notnull() & (csvinput.datePiece<Constants.clnDateMinimalDate))
+            | (Constants.bclnDateMaximalDate & csvinput.datePiece.notnull() & (csvinput.datePiece>Constants.clnDateMaximalDate))
+           ) 
+
+    csvinput.loc[test] = None
     
-    # preprocess data
-    csvinput.drop(csvinput.index[rowToDrop], inplace = True)
-    if toPrint:
-        print "==> preprocess completed"
-        print "   number of deleted rows :", len(rowToDrop)
-        print "   new amount of rows :", len(csvinput)
-        print ""
-        print ""
-            
+    totalIni = len(csvinput)
+    csvinput.dropna(axis=0,how='all',inplace=True)
+    totalFin = len(csvinput)
+    print "   ",str(totalIni-totalFin),"removed rows -",str(100.0*(totalIni-totalFin)/totalIni),"%\n"  
+    
     return csvinput
 
-def cleaningMontant(csvinput, toPrint = True):
+def cleaningMontant(csvinput):
     '''
     function that cleans the content of the column 'montantPieceEur'
     according to the behaviors described in Constants.
@@ -420,8 +390,6 @@ def cleaningMontant(csvinput, toPrint = True):
     returns csvinput (dataframe)
     '''        
     print "=== Starting Cleaning of montantPieceEur columns ==="
-    if toPrint:
-        print ""
     # validating the input
     if csvinput is None or len(csvinput)==0:
         print "No Data Remaining"
@@ -430,50 +398,29 @@ def cleaningMontant(csvinput, toPrint = True):
     if not 'montantPieceEur' in csvinput.columns:
         print "error : No column to analyse - montantPieceEur"
         return csvinput 
-    nbEntries = len(csvinput['montantPieceEur'])
-    rowToDrop = [] 
-    ind = 0
-    nbMaxi = 0
-    nbMini = 0
-    nbError = 0
-    for c in csvinput['montantPieceEur']:
-        s = Utils.validateMontant(c)
-        if len(s)>0:
-            rowToDrop.append(ind)
-        if s=="format":
-            nbError +=1
-        if s=="minimal":
-            nbMini +=1
-        if s=="maximal":
-            nbMaxi +=1
-        ind += 1
-    if toPrint and Constants.bclnMontantIntFormat:
-        print "the montant values must be integers", \
-              "and non negative" if Constants.bclnMontantNonNegativeValue else "", \
-              "and non zero values" if Constants.bclnMontantNonZeroValue else ""
-        print "   number of invalid montants:", nbError,"-",100.0*nbError/nbEntries,"%"
     
-    if toPrint and (Constants.bclnMontMaximalValue or Constants.bclnMontMinimalValue):
-        s= "the value of montants must be "+("above "+str(Constants.clnMontMinimalValue)+" " if Constants.bclnMontMinimalValue else "")
-        s = s + ("and " if Constants.bclnMontMaximalValue and Constants.bclnMontMinimalValue else "")
-        s = s + ("below "+str(Constants.clnMontMaximalValue)+" " if Constants.bclnMontMaximalValue else "")
-        print s
-        if Constants.bclnMontMinimalValue:
-            print "   number of montant value below the minimal value :",nbMini,"-",100.0*nbMini/nbEntries, "%"
-        if Constants.bclnMontMaximalValue:
-            print "   number of montant value above the maximal value :",nbMaxi,"-",100.0*nbMaxi/nbEntries, "%"
-        print ""
-        
-    # preprocess data
-    if(len(rowToDrop)>0):
-        csvinput.drop(csvinput.index[rowToDrop], inplace = True)
-    if toPrint:
-        print "==> preprocess completed"
-        print "  number of deleted rows :", len(rowToDrop)
-        print "  new amount of rows :", len(csvinput)
-        print ""
-        print ""
-            
+    # cleaning the data in one single test
+    # criterias for dropping
+    # - NaN int for montantPieceEur (and bclnMontantIntFormat)
+    # - negative value for montantPieceEur (and bclnMontantNonNegativeValue)
+    # - zero value for montantPieceEur (and bclnMontantNonZeroValue)
+    # - montantPieceEur smaller than minimal montant (and bclnMontMinimalValue)
+    # - montantPieceEur bigger than maximal montant (and bclnMontMaximalValue)
+    
+    test = ((Constants.bclnMontantIntFormat & csvinput.montantPieceEur.isnull())
+            | (Constants.bclnMontantNonNegativeValue & (csvinput.montantPieceEur<0))
+            | (Constants.bclnMontantNonZeroValue & (csvinput.montantPieceEur==0))
+            | (Constants.bclnMontMinimalValue & (csvinput.montantPieceEur<Constants.clnMontMinimalValue))
+            | (Constants.bclnMontMaximalValue & (csvinput.montantPieceEur>Constants.clnMontMaximalValue))
+            )
+    
+    csvinput.loc[test] = None
+    totalIni = len(csvinput)
+    csvinput.dropna(axis=0,how='all',inplace=True)
+    totalFin = len(csvinput)
+    print "   ",str(totalIni-totalFin),"removed rows -",str(100.0*(totalIni-totalFin)/totalIni),"%\n"  
+    
+    
     return csvinput        
     
 def cleaningOther(csvinput, toPrint = True):
@@ -2026,15 +1973,18 @@ def importAndCleanCsv(toPrint = False, ftp = False, toSave = False):
     startTime = time.time()
     # importing the csv file and creating the datframe
     if(ftp):
-        csvinput = importFTPCsv(addPaidBill=True)
+        csvinput = importFTPCsv(addPaidBill=True,dtype=Constants.dtype)
     else:
-        csvinput = importCsv(addPaidBill=True)
-        
+        csvinput = importCsv(addPaidBill=True,dtype=Constants.dtype)
+    # prepricessing of the dates
+    csvinput['datePiece'] = pd.to_datetime(csvinput['datePiece'], format='%Y-%m-%d', errors='coerce') 
+    csvinput['dateEcheance'] = pd.to_datetime(csvinput['dateEcheance'], format='%Y-%m-%d', errors='coerce') 
+    csvinput['dateDernierPaiement'] = pd.to_datetime(csvinput['dateDernierPaiement'], format='%Y-%m-%d', errors='coerce')   
     # preprocess the dataframe
-    csvinput = cleaningDates(csvinput, toPrint)
-    csvinput = cleaningOther(csvinput, toPrint)
-    csvinput = cleaningMontant(csvinput, toPrint)
-    csvinput = cleaningEntrepId(csvinput, toPrint)
+    csvinput = cleaningDates(csvinput)
+#     csvinput = cleaningOther(csvinput)
+    csvinput = cleaningMontant(csvinput)
+    csvinput = cleaningEntrepId(csvinput)
     Utils.printTime(startTime)
     print ""
     if toSave:

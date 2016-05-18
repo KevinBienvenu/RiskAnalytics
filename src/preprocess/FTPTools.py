@@ -157,8 +157,7 @@ def retrieveFtplib(filename, compression = None, usecols=None, dtype=None, toPri
     if toPrint:
         print 'Dataframe created :', interval, 'sec'
     return db
-    
-    
+       
 def storeFtplib(dataframe, filename="cameliaBalAGKevin.csv", compression = None, toPrint = False):
     """
     function that connects to the remote FTP serveur and upload a pandas dataframe

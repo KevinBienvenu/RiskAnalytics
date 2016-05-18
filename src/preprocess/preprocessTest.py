@@ -196,102 +196,94 @@ class TestUtils(unittest.TestCase):
         d0 = None
         d1 = None
         d2 = None
-        Constants.bclnDateDernierPaiementFormat = False
         result = Utils.validateDate(d0,d1,d2)
         # tests pieceFormat result
         self.assertTrue("pieceFormat" in result)
         # tests echeanceFormat result
         self.assertTrue("echeanceFormat" in result)
-        # tests dernierPaiementFormat result (1/2)
-        self.assertTrue(not("dernierPaiementFormat" in result))
-        Constants.bclnDateDernierPaiementFormat = True
-        result = Utils.validateDate(d0,d1,d2)
-        # tests dernierPaiementFormat result (2/2)
-        self.assertTrue("dernierPaiementFormat" in result)
+        # tests dernierPaiementFormat result
+        self.assertTrue("dernierPaiementFormat" in result 
+                        or not Constants.bclnDateDernierPaiementFormat)
         
         ## checking consistency behaviour
         d0 = "2012-01-01"
         d1 = "2012-02-01"
         d2 = "2012-03-01"
-        Constants.bclnDateInconsistent = True
         result = Utils.validateDate(d0,d1,d2)
-        # tests consistency (1/4) : everything is ok
+        # tests consistency (1/3) : everything is ok
         self.assertTrue(not("inconsistentDates" in result))
         d0 = "2013-01-01"
         d1 = "2012-02-01"
         d2 = "2012-03-01"
         result = Utils.validateDate(d0,d1,d2)
-        # tests consistency (2/4) : inconsistent date 1
-        self.assertTrue("inconsistentDates" in result)
+        # tests consistency (2/3) : inconsistent date 1
+        self.assertTrue("inconsistentDates" in result or not Constants.bclnDateInconsistent)
         d0 = "2012-01-01"
         d1 = "2012-02-01"
         d2 = "2011-03-01"
         result = Utils.validateDate(d0,d1,d2)
-        # tests consistency (3/4) : inconsistent date 2
-        self.assertTrue("inconsistentDates" in result)
-        Constants.bclnDateInconsistent = False
-        result = Utils.validateDate(d0,d1,d2)
-        # tests consistency (4/4) : boolean off
-        self.assertTrue(not("inconsistentDates" in result))
+        # tests consistency (3/3) : inconsistent date 2
+        self.assertTrue("inconsistentDates" in result or not Constants.bclnDateInconsistent)
         
         ## checking month difference behaviour
-        Constants.bclnDateMonthDiff = True
-        Constants.clnDateMonthDiff = 5
         d0 = "2012-01-01"
         d1 = "2012-02-01"
         d2 = "2012-04-01"
         result = Utils.validateDate(d0,d1,d2)
-        # test month diff (1/4) : everything is ok
-        self.assertTrue(not("monthDiff" in result))
-        Constants.clnDateMonthDiff = 1
+        # test month diff (1/3) : everything is ok
+        self.assertTrue("monthDiff" in result 
+                        or (Utils.nbMonthsBetweenDates(d0, d2)<Constants.clnDateMonthDiff 
+                            and Utils.nbMonthsBetweenDates(d0, d1)<Constants.clnDateMonthDiff)
+                        or not Constants.bclnDateMonthDiff)
+        d2 = "2048-04-01"
         result = Utils.validateDate(d0,d1,d2)
-        # test month diff (2/4) : problem with date 2
-        self.assertTrue("monthDiff" in result)
+        # test month diff (2/3) : problem with date 2
+        self.assertTrue("monthDiff" in result 
+                        or (Utils.nbMonthsBetweenDates(d0, d2)<Constants.clnDateMonthDiff 
+                            and Utils.nbMonthsBetweenDates(d0, d1)<Constants.clnDateMonthDiff)
+                        or not Constants.bclnDateMonthDiff)
         Constants.clnDateMonthDiff = 5
-        d1 = "2013-02-01"
+        d1 = "2048-02-01"
+        d2 = "2012-04-01"
         result = Utils.validateDate(d0,d1,d2)
-        # test month diff (3/4) : problem with date 1
-        self.assertTrue("monthDiff" in result)
-        Constants.bclnDateMonthDiff = False
-        result = Utils.validateDate(d0,d1,d2)
-        # test month diff (4/4) : boolean off
-        self.assertTrue(not("monthDiff" in result))
+        # test month diff (3/3) : problem with date 1
+        self.assertTrue("monthDiff" in result 
+                        or (Utils.nbMonthsBetweenDates(d0, d2)<Constants.clnDateMonthDiff 
+                            and Utils.nbMonthsBetweenDates(d0, d1)<Constants.clnDateMonthDiff)
+                        or not Constants.bclnDateMonthDiff)
         
         ## checking minimal date behaviour
-        Constants.bclnDateMinimalDate = True
-        Constants.clnDateMinimalDate = datetime.datetime.strptime("2010-12-12", '%Y-%m-%d').date()
         d0 = "2013-01-01"
         d1 = "2013-01-01"
         d2 = None
         result = Utils.validateDate(d0,d1,d2)
-        # test minimal date (1/3) : everything is ok
-        self.assertTrue(not("minimalDate" in result))
-        d0 = "2009-01-01"
+        # test minimal date (1/2) : everything is ok
+        self.assertTrue("minimalDate" in result
+                        or datetime.datetime.strptime(d0,"%Y-%m-%d").date()>Constants.clnDateMinimalDate
+                        or not Constants.bclnDateMinimalDate)
+        d0 = "1009-01-01"
         result = Utils.validateDate(d0,d1,d2)
-        # test minimal date (2/3) : problem of minimal date
-        self.assertTrue("minimalDate" in result)
-        Constants.bclnDateMinimalDate = False
-        result = Utils.validateDate(d0,d1,d2)
-        # test minimal date (3/3) : boolean is off
-        self.assertTrue(not("minimalDate" in result))
+        # test minimal date (2/2) : problem of minimal date
+        self.assertTrue("minimalDate" in result
+                        or datetime.datetime.strptime(d0,"%Y-%m-%d").date()>Constants.clnDateMinimalDate
+                        or not Constants.bclnDateMinimalDate)
+        
         
         ## checking maximal date behaviour
-        Constants.bclnDateMaximalDate = True
-        Constants.clnDateMaximalDate = datetime.datetime.strptime("2012-12-12", '%Y-%m-%d').date()
-        d0 = "2012-01-01"
-        d1 = "2012-01-01"
+        d0 = "2013-01-01"
+        d1 = "2013-01-01"
         d2 = None
         result = Utils.validateDate(d0,d1,d2)
-        # test maximal date (1/3) : everything is ok
-        self.assertTrue(not("maximalDate" in result))
-        d0 = "2013-01-01"
+        # test maximal date (1/2) : everything is ok
+        self.assertTrue("maximalDate" in result
+                        or datetime.datetime.strptime(d0,"%Y-%m-%d").date()<Constants.clnDateMaximalDate
+                        or not Constants.bclnDateMaximalDate)
+        d0 = "3009-01-01"
         result = Utils.validateDate(d0,d1,d2)
-        # test maximal date (2/3) : problem of maximal date
-        self.assertTrue("maximalDate" in result)
-        Constants.bclnDateMaximalDate = False
-        result = Utils.validateDate(d0,d1,d2)
-        # test maximal date (3/3) : boolean is off
-        self.assertTrue(not("maximalDate" in result))
+        # test maximal date (2/2) : problem of maximal date
+        self.assertTrue("maximalDate" in result
+                        or datetime.datetime.strptime(d0,"%Y-%m-%d").date()<Constants.clnDateMaximalDate
+                        or not Constants.bclnDateMaximalDate)
 
     def testNbMonthsBetweenDates(self):
         ''' tests the nbMonthsBetweenDates function'''
@@ -314,46 +306,29 @@ class TestUtils(unittest.TestCase):
    
     def testValidateMontant(self):
         ''' tests the validateMontant function '''
-        Constants.bclnMontantIntFormat = True
-        Constants.bclnMontantNonNegativeValue = True
-        Constants.bclnMontantNonZeroValue = True
-        Constants.bclnMontMinimalValue = False
-        Constants.bclnMontMaximalValue = False
+
+        ## checking int format behavior
         montant = None
-        self.assertEqual(Utils.validateMontant(montant), "format")
+        self.assertTrue(Utils.validateMontant(montant)=="format" or not Constants.bclnMontantIntFormat)
         montant = -1
-        self.assertEqual(Utils.validateMontant(montant), "format")
+        self.assertTrue(Utils.validateMontant(montant)=="format" or not Constants.bclnMontantNonNegativeValue)
         montant = 0
-        self.assertEqual(Utils.validateMontant(montant), "format")
-        Constants.bclnMontantNonZeroValue = False
-        s = Utils.validateMontant(montant)
-        print s
-        self.assertEqual(s, "")
-        Constants.bclnMontantNonNegativeValue = False
-        montant = -1
-        self.assertEqual(Utils.validateMontant(montant), "")
-        Constants.bclnMontantNonNegativeValue = True
-        Constants.bclnMontantNonZeroValue = True
+        self.assertTrue(Utils.validateMontant(montant)=="format" or not Constants.bclnMontantNonZeroValue)
+
         
-        ## checking minimal value behaviour
+        ## checking minimal value behavior
         Constants.bclnMontMinimalValue = True
-        Constants.clnMontMinimalValue = 30
-        montant = 35 
-        self.assertEqual(Utils.validateMontant(montant), "")
-        montant = 15 
-        self.assertEqual(Utils.validateMontant(montant), "minimal")
-        Constants.bclnMontMinimalValue = False
-        self.assertEqual(Utils.validateMontant(montant), "")
+        montant = Constants.clnMontMinimalValue + 5 
+        self.assertTrue(Utils.validateMontant(montant)=="" or not Constants.bclnMontMinimalValue)
+        montant = Constants.clnMontMinimalValue - 5 
+        self.assertTrue(Utils.validateMontant(montant)=="minimal" or not Constants.bclnMontMinimalValue)
         
-        ## checking maximal value behaviour
+        ## checking maximal value behavior
         Constants.bclnMontMaximalValue = True
-        Constants.clnMontMaximalValue = 40
-        montant = 35 
-        self.assertEqual(Utils.validateMontant(montant), "")
-        montant = 45 
-        self.assertEqual(Utils.validateMontant(montant), "maximal")
-        Constants.bclnMontMaximalValue = False
-        self.assertEqual(Utils.validateMontant(montant), "")  
+        montant = Constants.clnMontMaximalValue - 5 
+        self.assertTrue(Utils.validateMontant(montant)=="" or not Constants.bclnMontMaximalValue)
+        montant = Constants.clnMontMaximalValue + 5 
+        self.assertTrue(Utils.validateMontant(montant)=="maximal" or not Constants.bclnMontMaximalValue)
     
 class TestPaiementDataExtraction(unittest.TestCase):
     '''
