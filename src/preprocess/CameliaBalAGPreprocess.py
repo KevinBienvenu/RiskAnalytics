@@ -42,7 +42,6 @@ import datetime
 import math
 import os
 import time
-import 
 
 import Constants
 import DrawingTools

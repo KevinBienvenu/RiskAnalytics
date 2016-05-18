@@ -35,7 +35,7 @@ import FTPTools
 # analyzingEntrepEtab()
 # printLastGraphs("etabFile")
 
-csvinput = importAndCleanCsv(toPrint = False, ftp = True, toSave = False)
+csvinput = importAndCleanCsv(toPrint = True, ftp = True, toSave = False)
 # csvEtab = getCsvEtab(csvinput)
 # prepareInput("hist2d")
 # AnalyzingEffectifOverCapital(csvEtab)
