@@ -124,7 +124,7 @@ def importFTPCsv(filename = 'cameliaBalAG.csv.gz',sep='\t',usecols = None,dtype 
             csvinput['paidBill'] = pd.Series(paidBill, index=csvinput.index)
     return csvinput
 
-def getAndPreprocessCsvEtab(csvinput):
+def getAndPreprocessCsvEtab(csvinput=None):
     '''
     function that imports the Etab file from the remote ftp server
     
@@ -149,7 +149,9 @@ def getAndPreprocessCsvEtab(csvinput):
     returns None if an error occurs.
     '''
 
-    print "== loading csvEtab"
+    print "Extracting the csvEtab dataframe"
+    startTime = time.time()
+    
     # setting parameters for the import of the dataframe
     usecols = ['entrep_id','capital','DCREN','EFF_ENT']
     dtype = {}
@@ -163,16 +165,19 @@ def getAndPreprocessCsvEtab(csvinput):
     print "   processing file",
     totalIni = len(csvEtab)
     # we remove wrong date input and convert the others
-    csvEtab.loc[~csvEtab['DCREN'].str.contains(r"^[12][90][0-9][0-9][01][0-9][0-3][0-9]$", na=True), 'DCREN'] = None
-    csvEtab['DCREN'] = pd.to_datetime(csvEtab['DCREN'], format='%Y%m%d', errors='coerce')   
+
+    csvEtab.loc[~csvEtab['DCREN'].str.contains(r"^[12][90][0-9][0-9]-[01][0-9]-[0-3][0-9]$",na=True)] = None
+    csvEtab['DCREN'] = pd.to_datetime(csvEtab['DCREN'], format='%Y-%m-%d', errors='coerce')   
     csvEtab.dropna(axis=0, inplace=True)
+    
     
     # if no parameter csvinput was given, we just return the whole Dataframe
     if csvinput is None:
         # counting errors and displaying results
         totalFin = len(csvEtab)
         print "... done"
-        print "   %d removed rows - %d %\n" % (totalIni-totalFin,100.0*(totalIni-totalFin)/totalIni) 
+        print "   ",str(totalIni-totalFin),"removed rows -",str(100.0*(totalIni-totalFin)/totalIni),"%\n" 
+        Utils.printTime(startTime) 
         return csvEtab
     
     # otherwise, we clean the file according to the entrep_id in the csvinput Dataframe
@@ -180,10 +185,10 @@ def getAndPreprocessCsvEtab(csvinput):
     # we remove lines of cvsEtab that are not concerning entreprises from csvinput
     csvEtab.loc[~csvEtab['entrep_id'].isin(column),['entrep_id']] = None    
 
-    # checking the validity of the result dataframe
-    if csvEtab is None or ['entrep_id','capital','DCREN','EFF_ENT'] not in csvEtab.columns:
-        print "error : invalid csvEtab file"
-        return None
+#     # checking the validity of the result dataframe
+#     if csvEtab is None or not (['entrep_id','capital','DCREN','EFF_ENT'] in csvEtab.columns):
+#         print "error : invalid csvEtab file"
+#         return None
     
     # grouping the csvEtab file according to 'entrep_id'
     grouped = csvEtab.groupby('entrep_id')
@@ -200,7 +205,8 @@ def getAndPreprocessCsvEtab(csvinput):
     # counting errors and displaying results
     totalFin = len(csvEtab)
     print "... done"
-    print "   %d removed rows - %d %\n" % (totalIni-totalFin,100.0*(totalIni-totalFin)/totalIni)
+    print "   ",str(totalIni-totalFin),"removed rows -",str(100.0*(totalIni-totalFin)/totalIni),"%\n"  
+    Utils.printTime(startTime)
     
     return csvEtab
       
@@ -215,7 +221,9 @@ def getAndPreprocessCsvScore(csvinput = None):
     -- OUT:
     csvScore : pandas.Dataframe containing the file Score.
     '''
-    print "== loading csvScore"
+    print "Extracting the csvScore dataframe"
+    startTime = time.time()
+    
     # setting parameters for the import of the dataframe
     usecols = ['entrep_id','dateBilan','sourceModif','scoreSolv','scoreZ','scoreCH','scoreAltman']
     dtype= {}
@@ -230,9 +238,9 @@ def getAndPreprocessCsvScore(csvinput = None):
                                        usecols=usecols, dtype = dtype, toPrint=False)
     print "   processing file",
     # cleaning according to the date column and converting remaning rows
-    csvScore.loc[~csvScore['dateBilan'].str.contains(r"^[0-3]?[0-9]/[01][0-9]/[12][90][0-9][0-9]$"),
-                 ['dateBilan']] = None
-    csvScore['DCREN'] = pd.to_datetime(csvScore['dateBilan'], format='%d/%m/%Y', errors='coerce')   
+    csvScore.loc[~csvScore.dateBilan.str.contains(r"^[12][90][0-9][0-9]-[01][0-9]-[0-3][0-9]$",na=True),['dateBilan']] = None
+    csvScore['year'] = pd.to_datetime(csvScore['dateBilan'], format='%Y-%m-%d', errors='coerce').dt.year
+    del csvScore['dateBilan']   
     totalIni = len(csvScore)
     csvScore.dropna(axis=0,inplace=True)
     
@@ -243,12 +251,13 @@ def getAndPreprocessCsvScore(csvinput = None):
         # printing progress
         totalFin = len(csvScore)
         print "... done"
-        print "   %d removed rows - %d %\n" % (totalIni-totalFin,100.0*(totalIni-totalFin)/totalIni)
+        print "   ",str(totalIni-totalFin),"removed rows -",str(100.0*(totalIni-totalFin)/totalIni),"%\n"  
+        Utils.printTime(startTime)
         return csvScore
     # keeping only the bilans1 rows
     csvScore = csvScore[csvScore.sourceModif=="bilans1"]
     # removing all years before 2010
-    csvScore = csvScore[csvScore.dateBilan.year>=2010]
+    csvScore = csvScore[csvScore.year>=2010]
     column = csvinput['entrep_id']
     # we remove lines of cvsScore that are not concerning entreprises from csvinput
     csvScore.loc[~csvScore['entrep_id'].isin(column),['entrep_id']] = None
@@ -260,7 +269,9 @@ def getAndPreprocessCsvScore(csvinput = None):
     # printing final progress
     totalFin = len(csvScore)
     print "... done"
-    print "   %d removed rows - %d %\n" % (totalIni-totalFin,100.0*(totalIni-totalFin)/totalIni)
+    print "   ",str(totalIni-totalFin),"removed rows -",str(100.0*(totalIni-totalFin)/totalIni),"%\n"  
+    Utils.printTime(startTime)
+    
     
     return csvScore
     

@@ -8,15 +8,18 @@ Created on 18 mai 2016
 import pandas as pd
 import numpy as np
 import math
+# 
 
-df = pd.DataFrame({'A' : ['foo', 'bar', 'foo', 'bar',
-                          'foo', 'bar', 'foo', 'foo'],
-                   'B' : ['one', 'one', 'two', 'three',
-                          'two', 'two', 'one', 'three'],
-                   'C' : np.random.randn(8),
-                   'D' : np.random.randn(8)})
+print True==1
 
-print df
+# df = pd.DataFrame({'A' : ['foo', 'bar', 'foo', 'bar',
+#                           'foo', 'bar', 'foo', 'foo'],
+#                    'B' : ['one', 'one', 'two', 'three',
+#                           'two', 'two', 'one', 'three'],
+#                    'C' : np.random.randn(8),
+#                    'D' : np.random.randn(8)})
+# 
+# print df
 
 # grouped = df.groupby('A')
 # 
@@ -30,7 +33,7 @@ print df
 # 
 # print df
 
-log10abs = lambda x : math.log10(abs(x))
-df['E'] = df.C.apply(log10abs)
-
-print df
+# log10abs = lambda x : math.log10(abs(x))
+# df['E'] = df.C.apply(log10abs)
+# 
+# print df
