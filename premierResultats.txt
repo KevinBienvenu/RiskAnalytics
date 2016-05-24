@@ -1,0 +1,11 @@
+Learning Results
+
+over the file preprocessedDataBalAGclean.csv
+
+= Linear Regression
+
+'logMontant' 'echeance' 'age' 'scoreSolv' 'scoreZ' 'scoreCH' = 43667 , 1.38 %
+'montantPieceEur' 'logMontant' 'echeance' 'year' 'age' 'scoreSolv' 'scoreZ' 'scoreCH' = 43675 , 1.38 %
+'logMontant' 'echeance' 'scoreSolv' 'scoreZ' 'scoreCH' = 43667 , 1.38 %
+'logMontant' 'echeance' = 43667 , 1.38 % 
+'logMontant' = 43656 , 1.38 %

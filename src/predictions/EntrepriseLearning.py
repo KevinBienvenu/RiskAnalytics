@@ -127,8 +127,9 @@ def learning(csvX, csvY):
     print ""
     X = np.array(csvX)
     Y = np.array(csvY.Y.values)
-#     X = np.array(csvX.reindex(perm))
-#     Y = np.array(csvY.reindex(perm))
+    perm = np.random.permutation(len(X))
+    X = X[perm]
+    Y = Y[perm]
     del csvX
     del csvY
     gc.collect()
