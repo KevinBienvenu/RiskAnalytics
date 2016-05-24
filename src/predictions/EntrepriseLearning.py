@@ -93,8 +93,12 @@ def importPreprocessData(filename = "preprocessedDataBalAGclean.csv"):
     X : np.array containing features (np.array)
     Y : np.array containing observation (np.array)
     '''
+    print "== Importing data"
     usecols = ['montantPieceEur','logMontant','echeance','year','age','scoreSolv','scoreZ','scoreCH','Y']
-    usecolsX = ['montantPieceEur','logMontant','echeance','year','age','scoreSolv','scoreZ','scoreCH']
+#     usecolsX = ['montantPieceEur','logMontant','echeance','year','age','scoreSolv','scoreZ','scoreCH']
+#     usecolsX = ['logMontant']
+    usecolsX = ['echeance']
+#     usecolsX = ['logMontant','echeance','age','scoreSolv','scoreZ','scoreCH']
     usecolsY = ['Y']
     dtype = {}
     dtype['montantPieceEur'] = np.float64
@@ -112,10 +116,15 @@ def importPreprocessData(filename = "preprocessedDataBalAGclean.csv"):
     csv['Y'] = csv['Y'].apply(fY)
     csv.replace([np.inf,-np.inf], np.nan, inplace=True)
     csv.dropna(axis=0,how='any',inplace=True)
+    print "   ...done"
     return (csv[usecolsX],csv[usecolsY])
 
 def learning(csvX, csvY):
 #     perm = np.random.permutation(csvX.index)
+    print "== Learning algorithm"
+    print ""
+    print "using columns :",csvX.columns.values
+    print ""
     X = np.array(csvX)
     Y = np.array(csvY.Y.values)
 #     X = np.array(csvX.reindex(perm))
@@ -133,8 +142,8 @@ def learning(csvX, csvY):
     trainY = Y[:nbEntriesTraining]
     testY = Y[nbEntriesTraining:]
     
-    print "length of the training set:", len(trainX)
-    print "length of the testing set:", len(testX)
+#     print "length of the training set:", len(trainX)
+#     print "length of the testing set:", len(testX)
     
     # list of models
     models = []
