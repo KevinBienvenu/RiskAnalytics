@@ -87,7 +87,7 @@ clnDateMinimalDate = "2010-01-01"
 clnDateMinimalDate = datetime.datetime.strptime(clnDateMinimalDate,"%Y-%m-%d").date()
 # clean according to a maximal date
 bclnDateMaximalDate = False
-clnDateMaximalDate = "2003-12-31"
+clnDateMaximalDate = "2015-12-31"
 clnDateMaximalDate = datetime.datetime.strptime(clnDateMaximalDate,"%Y-%m-%d").date()
 
 
@@ -124,7 +124,7 @@ anaOtherStandardDate = datetime.datetime.strptime("2010-01-13","%Y-%m-%d").date(
 anaIdStepSizeBillNumber = 10
 # parameter for the vizualisation of the bill numbers
 #    the higher it is the more columns there will be
-anaIdLogCoefficientBillNumber = 5.0
+anaIdLogCoefficientBillNumber = 3
 # parameter for the vizualisation of the ids values
 #    the higher it is the more columns there will be
 anaIdLogCoefficientIds = 5.0
@@ -133,7 +133,7 @@ anaIdLogCoefficientIds = 5.0
 ### ANALYSING MONTANTS
 # parameter for the vizualisation of the montant values
 #    the higher it is the more columns there will be
-anaIdLogCoefficientMontants = 5.0
+anaIdLogCoefficientMontants = 3
 
 
 ### ANALYSING COMPLETS

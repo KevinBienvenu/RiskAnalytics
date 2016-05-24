@@ -1,0 +1,8 @@
+name:Ratio des factures payées par mois
+xlabel:
+ylabel:Pourcentage de factures
+typeyaxis:linear
+x:Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec
+y1:0.118573797678,0.149530127142,0.0605306799337,0.0516860143726,0.0522388059701,0.0417357656164,0.108070757324,0.171088999447,0.0610834715312,0.0663349917081,0.0721393034826,0.0469872857933
+name1:Pourcentage de factures payées
+percent:False

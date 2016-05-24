@@ -5,12 +5,12 @@ Created on 18 mai 2016
 @author: Utilisateur
 '''
 
-import pandas as pd
-import numpy as np
+import datetime
 import math
-# 
 
-print True==1
+import numpy as np
+import pandas as pd
+
 
 # df = pd.DataFrame({'A' : ['foo', 'bar', 'foo', 'bar',
 #                           'foo', 'bar', 'foo', 'foo'],
@@ -18,8 +18,17 @@ print True==1
 #                           'two', 'two', 'one', 'three'],
 #                    'C' : np.random.randn(8),
 #                    'D' : np.random.randn(8)})
-# 
+#  
 # print df
+# 
+# print df[df.D>0]
+# 
+# print len(df[df.D>0])
+clnDateMaximalDate = datetime.datetime.strptime("1998-10-12","%Y-%m-%d").date()
+
+print clnDateMaximalDate.month
+
+
 
 # grouped = df.groupby('A')
 # 

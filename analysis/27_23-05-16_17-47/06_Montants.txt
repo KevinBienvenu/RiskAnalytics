@@ -1,0 +1,8 @@
+name:Distribution des montants des factures
+xlabel:Valeur des factures (euros)
+ylabel:Nombre de factures
+typeyaxis:linear
+x:1000,,,10000,,,100000,,
+y1:0.0237129667504,0.0513177116812,0.0909367147782,0.141927189856,0.188850581429,0.206287617601,0.171916087185,0.11585344475,0.00919768596973
+name1:
+percent:False

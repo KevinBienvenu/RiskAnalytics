@@ -1,0 +1,8 @@
+name:Distribution du nombre de factures par entreprises
+xlabel:Valeur de l'identifiant
+ylabel:Nombre de factures par entreprise
+typeyaxis:log
+x:1.0e+00,2.2e+00,4.6e+00,1.0e+01,2.2e+01,4.6e+01,1.0e+02,2.2e+02,4.6e+02,1.0e+03
+y1:0.884513025856,0.0660448763337,0.0316429425983,0.0111336279513,0.00424835803404,0.00146495104622,0.000585980418488,0.000195326806163,0.000146495104622,2.44158507703e-05
+name1:
+percent:False

@@ -358,26 +358,26 @@ def cleaningDates(csvinput):
     # - Time gap between Echeance or DernierPaiement and Piece larger than threshold (and bclnDateMonthDiff)
     # - datePiece before minimal date (and bclnDateMinimalDate)
     # - datePiece after maximal date (and bclnDateMaximalDate)
-    test = ((Constants.bclnDatePieceFormat & csvinput.datePiece.isnull())
-            |(Constants.bclnDateEcheanceFormat & csvinput.dateEcheance.isnull())
-            |(Constants.bclnDateDernierPaiementFormat & csvinput.dateDernierPaiement.isnull())
-            |(Constants.bclnDateInconsistent
-               & csvinput.datePiece.notnull()
-               & ((csvinput.dateDernierPaiement.notnull()
-                    & (csvinput.dateDernierPaiement-csvinput.datePiece).astype('timedelta64[D]')<0)
-                  |(csvinput.dateEcheance.notnull() 
-                    & (csvinput.dateEcheance-csvinput.datePiece).astype('timedelta64[D]')<0) 
-                   ) 
-              ) 
-            | (Constants.bclnDateMonthDiff
-               & csvinput.datePiece.notnull() 
-               & ((csvinput.dateDernierPaiement.notnull() 
-                   & (csvinput.dateDernierPaiement-csvinput.datePiece).astype('timedelta64[M]')>Constants.clnDateMonthDiff) 
-                  |(csvinput.dateEcheance.notnull() 
-                    & (csvinput.dateEcheance-csvinput.datePiece).astype('timedelta64[M]')>Constants.clnDateMonthDiff)) 
-               ) 
-            | (Constants.bclnDateMinimalDate & csvinput.datePiece.notnull() & (csvinput.datePiece<Constants.clnDateMinimalDate))
-            | (Constants.bclnDateMaximalDate & csvinput.datePiece.notnull() & (csvinput.datePiece>Constants.clnDateMaximalDate))
+    test = ((Constants.bclnDatePieceFormat & (csvinput.datePiece.isnull())) \
+            |(Constants.bclnDateEcheanceFormat & (csvinput.dateEcheance.isnull())) \
+            |(Constants.bclnDateDernierPaiementFormat & (csvinput.dateDernierPaiement.isnull())) \
+            |(Constants.bclnDateInconsistent \
+               & (csvinput.datePiece.notnull()) \
+               & ((csvinput.dateDernierPaiement.notnull() \
+                    & ((csvinput.dateDernierPaiement-csvinput.datePiece).astype('timedelta64[D]')<0)) \
+                  |(csvinput.dateEcheance.notnull()  \
+                    & ((csvinput.dateEcheance-csvinput.datePiece).astype('timedelta64[D]')<0))  \
+                   )  \
+              )  \
+            | (Constants.bclnDateMonthDiff \
+               & (csvinput.datePiece.notnull())  \
+               & ((csvinput.dateDernierPaiement.notnull()  \
+                   & ((csvinput.dateDernierPaiement-csvinput.datePiece).astype('timedelta64[M]')>Constants.clnDateMonthDiff))  \
+                  |(csvinput.dateEcheance.notnull()  \
+                    & ((csvinput.dateEcheance-csvinput.datePiece).astype('timedelta64[M]')>Constants.clnDateMonthDiff)))  \
+               )  \
+            | (Constants.bclnDateMinimalDate & (csvinput.datePiece.notnull()) & (csvinput.datePiece<Constants.clnDateMinimalDate)) \
+            | (Constants.bclnDateMaximalDate & (csvinput.datePiece.notnull()) & (csvinput.datePiece>Constants.clnDateMaximalDate)) \
            ) 
 
     csvinput.loc[test] = None
@@ -385,6 +385,9 @@ def cleaningDates(csvinput):
     totalIni = len(csvinput)
     csvinput.dropna(axis=0,how='all',inplace=True)
     totalFin = len(csvinput)
+    
+    print csvinput.loc[csvinput.dateEcheance<Constants.clnDateMinimalDate]
+    
     print "   ",str(totalIni-totalFin),"removed rows -",str(100.0*(totalIni-totalFin)/totalIni),"%\n"  
     
     return csvinput
@@ -434,7 +437,7 @@ def cleaningMontant(csvinput):
     return csvinput        
       
 ''' III - Analyzing Functions '''
-def analyzingEntrepId(csvinput, toSaveGraph = False, toDrawGraphOld = False):
+def analyzingEntrepId(csvinput, toSaveGraph = False):
     '''
     function that analyses the content of the 'entrep_id' column
     it displays information about enterprises and the number of bills.
@@ -446,120 +449,55 @@ def analyzingEntrepId(csvinput, toSaveGraph = False, toDrawGraphOld = False):
     '''
     print "=== Starting Analysis of entrep_id column ==="
     print ""
-    
-    
     if csvinput is None:
         print "no result to analyse"
         print ""
         return
-    
     if not('entrep_id' in csvinput.columns):
-        print "wrong columns"
+        print "wrong columns : 'entrep_id' is not present in the columns of the dataframe"
         print ""
         return
-    
-    # importing column
-    column = csvinput['entrep_id'].values
-
-    if len(column) ==0 :
+    if len(csvinput['entrep_id']) ==0 :
         print "no result to analyse"
         print ""
         return
+    nbEntreprises = len(np.unique(csvinput['entrep_id']))
+    nbEntries = len(csvinput['entrep_id'])
     
-    # initializing variables
-    #     setting size variables
-    nbEntreprises = len(np.unique(column))
-    nbEntries = len(column)
-    #    array specifying the number of bills for an enterprise
-    #    the i-th value is for the i-th enterprise in the dictionary
     print "enterprises number :" , nbEntreprises
-    print "mean bills number by enterprise :", nbEntries/nbEntreprises
-    print "enterprise minimal id :", min(column)
-    print "enterprise maximal id :", max(column)
+    print "mean bills number by enterprise :", 1.0*nbEntries/nbEntreprises
+    print "enterprise minimal id :", csvinput['entrep_id'].min()
+    print "enterprise maximal id :", csvinput['entrep_id'].max()
     print ""
     
-    # initializing variables
-    #    dictionary linking entrep_id to concerned rows
-    entrepriseToRowsDict = {}
-    #    dictionary linking entrep_id to the number of bills
-    entrepriseToBillNumber = {}
-    # filling the previous dictionaries
-    ind = 0
-    for entreprise in csvinput['entrep_id'].values:
-        if not entrepriseToRowsDict.has_key(entreprise):
-            entrepriseToRowsDict[entreprise] = []
-        entrepriseToRowsDict[entreprise].append(ind)
-        ind += 1
-    for entry in entrepriseToRowsDict.keys():
-        entrepriseToBillNumber[entry] = len(entrepriseToRowsDict[entry])
-        
-    print "maximum bills number value: ",np.max(entrepriseToBillNumber.values())
-    print "minimum bills number value: ",np.min(entrepriseToBillNumber.values())
+    nbBills = csvinput.groupby('entrep_id').size()         
+       
+    print "maximum bills number value: ",max(nbBills)
+    print "minimum bills number value: ",min(nbBills)
     print ""    
     
     # about the repartition of ids
-    repartitionIdArray = [0]*(int)(math.log10(max(column))*Constants.anaIdLogCoefficientBillNumber+1)
-    repartitionBillNumberArray = [0]*(int)(math.log10(max(entrepriseToBillNumber.values()))*Constants.anaIdLogCoefficientBillNumber+1)
-    for e in entrepriseToBillNumber.keys():
-        repartitionIdArray[(int)(math.log10(e+1)*Constants.anaIdLogCoefficientBillNumber)] += 1
-        repartitionBillNumberArray[(int)(math.log10(entrepriseToBillNumber[e])*Constants.anaIdLogCoefficientBillNumber)] += 1
+    idLog10 = lambda x : (int)(math.log10(x)*Constants.anaIdLogCoefficientBillNumber) if x>0 else 0
+    repartitionIdArray = csvinput.entrep_id.apply(idLog10).value_counts(normalize=True,sort=False,ascending=False).values
+    repartitionBillNumberArray = nbBills.apply(idLog10).value_counts(normalize=True,sort=False,ascending=False).values
+    print repartitionIdArray
+    print repartitionBillNumberArray
+    
     if toSaveGraph:
         # I - Distribution of the Id
         nbStepGraph = len(repartitionIdArray)
-        xlabel = ["e^" + str(1.0*i/Constants.anaIdLogCoefficientBillNumber) for i in range(nbStepGraph)]
+        xlabel = [str("%.1e"%10**(1.0*i/Constants.anaIdLogCoefficientBillNumber)) for i in range(nbStepGraph)]
         DrawingTools.createHistogram(x=xlabel, y1=repartitionIdArray, typeyaxis='log',
                                      xlabel="Valeur de l'identifiant", ylabel="Nombre d'entreprises", 
                                      name="Distribution des identifiants", filename="01_IdIdentifiants")        
         # II - Distribution of the number of bills
         nbStepGraph = len(repartitionBillNumberArray)
-        xlabel = ["e^" + str(1.0*i/Constants.anaIdLogCoefficientBillNumber) for i in range(nbStepGraph)]
-        DrawingTools.createHistogram(xlabel, y1=repartitionBillNumberArray, typeyaxis='log',
-                                     xlabel="Nombre de factures", ylabel="Nombre d'entreprises", 
-                                     name="Distribution du nombre de factures", filename="02_IdNombreFactures")
-    # dealing with the old graph displaying
-    if toDrawGraphOld:
-        # initializing graph displaying
-        plt.figure(Constants.figureId, figsize = Constants.figsize)
-        Constants.figureId += 1
-        plt.suptitle("Enterprises IDs Analysis", fontsize=16)
-        Constants.graphId = 1
+        xlabel = [str("%.1e"%10**(1.0*i/Constants.anaIdLogCoefficientBillNumber)) for i in range(nbStepGraph)]
+        DrawingTools.createHistogram(x=xlabel, y1=repartitionBillNumberArray, typeyaxis='log',
+                                     xlabel="Valeur de l'identifiant", ylabel="Nombre de factures par entreprise", 
+                                     name="Distribution du nombre de factures par entreprises", filename="02_IdNombreFactures")        
         
-        #####################################################################
-        # Drawing the repartition of enterprises according to a bill number #
-        #####################################################################
-        # pre-processing
-        nbStepGraph = len(repartitionBillNumberArray)
-        labelArray = [0] * nbStepGraph
-        for i in range(nbStepGraph):
-            labelArray[i] = "%.0f" % 10**(1.0*i/Constants.anaIdLogCoefficientBillNumber)
-        # displaying
-        ax1 = plt.subplot(Constants.subplotShapeEnterprises+Constants.graphId)
-        Constants.graphId += 1
-        plt.bar(range(nbStepGraph),repartitionBillNumberArray,1.0,color=Constants.colorOrange)
-        plt.title("repartition of the bill numbers", fontsize=12)
-        ax1.set_yscale('log')
-        plt.xticks(np.arange(nbStepGraph),labelArray,rotation = 70)
-        plt.ylabel("number of enterprises", fontsize=10)
-        
-        ##############################################
-        # Drawing the repartition of enterprises IDs #
-        ##############################################
-        # pre-processing
-        nbStepGraph = len(repartitionIdArray)
-        labelArray = [0] * nbStepGraph
-        for i in range(nbStepGraph):
-            labelArray[i] = "%.1e" %  10**(1.0*i/Constants.anaIdLogCoefficientBillNumber) if i%Constants.anaIdLogCoefficientIds==0 else ""
-        # displaying
-        ax1 = plt.subplot(Constants.subplotShapeEnterprises+Constants.graphId)
-        Constants.graphId += 1
-        plt.bar(range(nbStepGraph),repartitionIdArray,1.0,color=Constants.colorGreen)
-        plt.title("repartition of the IDs values", fontsize=12)
-        plt.xticks(np.arange(nbStepGraph),labelArray,rotation = 70)
-        ax1.set_yscale('log')
-        plt.xlabel("value of ID", fontsize=10)
-        plt.ylabel("number of enterprises", fontsize=10)
-
-def analyzingDates(csvinput, toSaveGraph = False, toDrawGraphOld = False):
+def analyzingDates(csvinput, toSaveGraph = False):
     '''
     function that analyses the content of the date columns
     'datePiece','dateEcheance','dateDernierPaiement'
@@ -574,12 +512,10 @@ def analyzingDates(csvinput, toSaveGraph = False, toDrawGraphOld = False):
     print ""
     print "=== Starting Analysis of date columns ==="
     print ""
-
     if csvinput is None:
         print "no result to analyse"
         print ""
         return
-    
     if not('datePiece' in csvinput.columns) \
         or not('dateEcheance' in csvinput.columns) \
         or not('dateDernierPaiement' in csvinput.columns) \
@@ -587,10 +523,7 @@ def analyzingDates(csvinput, toSaveGraph = False, toDrawGraphOld = False):
         print "wrong columns"
         print ""
         return
-    
-    column = csvinput[['datePiece','dateEcheance','dateDernierPaiement','paidBill']].values
-    
-    if len(column) ==0 :
+    if len(csvinput) ==0 :
         print "no result to analyse"
         print ""
         return
@@ -598,61 +531,59 @@ def analyzingDates(csvinput, toSaveGraph = False, toDrawGraphOld = False):
     # analysis of the datePiece only for paid bills
     # columnDatePaid is the temporary vector with all converted dates ['datePiece', 'dateEcheance', 'dateDernierPaiement'] for paid bills
     print "Analysis of the paid bills"
-    columnDatePaid = [[datetime.datetime.strptime(c[0], '%Y-%m-%d').date(),
-                   datetime.datetime.strptime(c[1], '%Y-%m-%d').date(),
-                   datetime.datetime.strptime(c[2], '%Y-%m-%d').date()] for c in column if c[3]]
-    if len(columnDatePaid)>0:
+    nbBills = len(csvinput)
+    csvinputPaid = csvinput.loc[csvinput.paidBill==True,['datePiece','dateEcheance','dateDernierPaiement']]
+    nbPaidBills = len(csvinputPaid)
+    if nbPaidBills>0:
         # computing minimal and maximal dates
-        minDate = np.min(column, axis = 0)
-        maxDate = np.max(column, axis = 0)
-        minDatePaid = np.min(columnDatePaid, axis = 0)
-        maxDatePaid = np.max(columnDatePaid, axis = 0)
-        nbBills = len(column)
-        nbPaidBills = len(columnDatePaid)
+        minDatePaid = csvinputPaid.min(axis=0)
+        maxDatePaid = csvinputPaid.max(axis=0)
         
         print ""
         print "    total amount of paid bills:", nbPaidBills,"-",100.0*nbPaidBills/nbBills,"%"
         print ""
         print "    DatePiece column:"
-        print "        min:", minDatePaid[0]
-        print "        max:", maxDatePaid[0]
+        # I especially want to apologize for those lines, 
+        # but this string casting is the best way
+        # I found to print only the date. Sorry...
+        print "        min:", str(minDatePaid[0])[:10]
+        print "        max:", str(maxDatePaid[0])[:10]
         print "    DateEcheance column:"
-        print "        min:", minDatePaid[1]
-        print "        max:", maxDatePaid[1]
+        print "        min:", str(minDatePaid[1])[:10]
+        print "        max:", str(maxDatePaid[1])[:10]
         print "    DateDernierPaiement column:"
-        print "        min:", minDatePaid[2]
-        print "        max:", maxDatePaid[2]
+        print "        min:", str(minDatePaid[2])[:10]
+        print "        max:", str(maxDatePaid[2])[:10]
         print ""
-        print "    mean day number between Piece and Echeance :", (np.mean([(c[1]-c[0]).days for c in columnDatePaid]))
-        print "    mean day number between Piece and DernierPaiement :", (np.mean([(c[2]-c[0]).days for c in columnDatePaid]))
-        print "    mean day number between Echeance and DernierPaiement :", (np.mean([(c[2]-c[1]).days for c in columnDatePaid]))
+        print "    mean day number between Piece and Echeance :", ((csvinputPaid.dateEcheance-csvinputPaid.datePiece).astype('timedelta64[D]')).mean()
+        print "    mean day number between Piece and DernierPaiement :", ((csvinputPaid.dateDernierPaiement-csvinputPaid.datePiece).astype('timedelta64[D]')).mean()
+        print "    mean day number between Echeance and DernierPaiement :", ((csvinputPaid.dateDernierPaiement-csvinputPaid.dateEcheance).astype('timedelta64[D]')).mean()
         print ""
-        print "    ratio of on-time paid bills :", 100.0*len([1 for c in columnDatePaid if c[2]<=c[1]])/nbPaidBills,"%"
-        print "    mean delay between Echeance and DernierPaiement for late paid bills:", (np.mean([(c[2]-c[1]).days for c in columnDatePaid  if c[2]>c[1]]))
+        print "    ratio of on-time paid bills :", 100.0*len(csvinputPaid[csvinputPaid.dateDernierPaiement<csvinputPaid.dateEcheance])/nbPaidBills,"%"
         print ""
     else:
         print "    no paid bills"
-    
+
     # analysis of the datePiece only for unpaid bills
-    columnDateUnpaid = [[datetime.datetime.strptime(c[0], '%Y-%m-%d').date(),datetime.datetime.strptime(c[1], '%Y-%m-%d').date()] for c in column if not c[3]]
+    csvinputUnpaid = csvinput.loc[csvinput.paidBill==False,['datePiece','dateEcheance']]
     print "Analysis of the unpaid bills"
-    if len(columnDateUnpaid)>0:
+    if len(csvinputUnpaid)>0:
         # computing minimal and maximal dates for unpaid bills
-        minDateUnpaid = np.min(columnDateUnpaid, axis = 0)
-        maxDateUnpaid = np.max(columnDateUnpaid, axis = 0)
+        minDateUnpaid = csvinputUnpaid.min(axis = 0)
+        maxDateUnpaid = csvinputUnpaid.max(axis = 0)
         nbUnpaidBills = nbBills - nbPaidBills
         
         print ""
         print "    total amount of unpaid bills:", nbUnpaidBills,"-",100.0*nbUnpaidBills/nbBills,"%"
         print ""
         print "    DatePiece column:"
-        print "        min:", minDateUnpaid[0]
-        print "        max:", maxDateUnpaid[0]
+        print "        min:", str(minDateUnpaid[0])[:10]
+        print "        max:", str(maxDateUnpaid[0])[:10]
         print "    DateEcheance column:"
-        print "        min:", minDateUnpaid[1]
-        print "        max:", maxDateUnpaid[1]
+        print "        min:", str(minDateUnpaid[1])[:10]
+        print "        max:", str(maxDateUnpaid[1])[:10]
         print ""
-        print "    mean day number between Piece and Echeance :", (np.mean([(c[1]-c[0]).days for c in columnDateUnpaid]))
+        print "    mean day number between Piece and Echeance :", ((csvinputUnpaid.dateEcheance-csvinputUnpaid.datePiece).astype('timedelta64[D]')).mean()
         print ""
     else:
         print "    no unpaid bills"
@@ -661,72 +592,48 @@ def analyzingDates(csvinput, toSaveGraph = False, toDrawGraphOld = False):
         # PRE PROCESSING 
         # computing the number of step for the bar-chart
         #    here by default Constants.anaDateStepMonthGraph = 12
-        nbStepGraphYear = Utils.nbMonthsBetweenDates(maxDate[0], minDate[0])/Constants.anaDateStepMonthGraph+1
-        nbStepGraphMonth = 12
         # array to store the number of entries by year
-        numberByYear = [0] * nbStepGraphYear
-        numberPaidByYear = [0] * nbStepGraphYear
-        numberOnTimePaidByYear = [0] * nbStepGraphYear
-        delayDernierPaiementByYear = [0] * nbStepGraphYear
-        delayEcheanceByYear = [0] * nbStepGraphYear
-        # array to store the number of entries by month
-        numberByMonth = [0] * nbStepGraphMonth
-        numberPaidByMonth = [0] * nbStepGraphMonth
-        numberOnTimePaidByMonth = [0] * nbStepGraphMonth
-        delayDernierPaiementByMonth = [0] * nbStepGraphMonth
-        delayEcheanceByMonth = [0] * nbStepGraphMonth
-        # going through the column of paid data
-        # => we use those columns because the strings are already converted into date
-        for c in columnDatePaid:
-            # computing concerned month and year
-            year = (int)(Utils.nbMonthsBetweenDates(c[0], minDate[0])/Constants.anaDateStepMonthGraph)
-            month = c[0].month-1
-            # updating number
-            numberByYear[year] += 1
-            numberByMonth[month] += 1
-            numberPaidByYear[year] += 1
-            numberPaidByMonth[month] += 1
-            if c[2]<c[1] :
-                numberOnTimePaidByYear[year] += 1
-                numberOnTimePaidByMonth[month] += 1
-            # updating delays
-            delayEcheance = (c[1]-c[0]).days
-            delayEcheanceByYear[year] += delayEcheance
-            delayEcheanceByMonth[month] += delayEcheance
-            delayDernierPaiement = (c[2]-c[0]).days
-            delayDernierPaiementByYear[year] += delayDernierPaiement
-            delayDernierPaiementByMonth[month] += delayDernierPaiement
-        # going through the column of unpaid data
-        for c in columnDateUnpaid:
-            # computing concerned month and year
-            year = (int)(Utils.nbMonthsBetweenDates(c[0], minDate[0])/Constants.anaDateStepMonthGraph)
-            month = c[0].month-1
-            # updating number
-            numberByYear[year] += 1
-            numberByMonth[month] += 1
-            # => we don't increase numberPaid nor numberOnTimePaid because the entry is not paid, neither paid on-time
-            # updating delays
-            delayEcheance = (c[1]-c[0]).days
-            delayEcheanceByYear[year] += delayEcheance
-            delayEcheanceByMonth[month] += delayEcheance
-            # => we don't have the dernier paiement date, so we don't compute the dernierpaiement delay
-        # computing ratio of numbers and means of delays
-        for month in range(nbStepGraphMonth):
-            if numberPaidByMonth[month]>0:
-                delayDernierPaiementByMonth[month] /= numberPaidByMonth[month]
-            if numberByMonth>0:
-                delayEcheanceByMonth[month] /= numberByMonth[month]
-                numberOnTimePaidByMonth[month] = 100.0*numberOnTimePaidByMonth[month]/numberByMonth[month]
-                numberPaidByMonth[month] = 100.0*numberPaidByMonth[month]/numberByMonth[month]
-        for year in range(nbStepGraphYear):
-            if numberPaidByYear[year]>0:
-                delayDernierPaiementByYear[year] /= numberPaidByYear[year]
-            if numberByYear[year]>0:
-                delayEcheanceByYear[year] /= numberByYear[year]
-                numberOnTimePaidByYear[year] = 100.0*numberOnTimePaidByYear[year]/numberByYear[year]
-                numberPaidByYear[year] = 100.0*numberPaidByYear[year]/numberByYear[year]
-        # computing the label for the year
-        labelByYear = [str((minDatePaid[0] + i*datetime.timedelta(days = Constants.anaDateStepMonthGraph*30.45)).year) for i in range(nbStepGraphYear)]
+        numberByYear = csvinput['datePiece'].dt.year.value_counts(normalize=True,sort=False,ascending=False).values
+        numberByMonth = csvinput['datePiece'].dt.month.value_counts(normalize=True,sort=False,ascending=False).values
+        numberPaidByYear = csvinputPaid['datePiece'].dt.year.value_counts(normalize=True,sort=False,ascending=False).values
+        numberPaidByMonth = csvinputPaid['datePiece'].dt.month.value_counts(normalize=True,sort=False,ascending=False).values
+        delayDernierPaiementByYear = []
+        delayEcheanceByYear = []
+        delayDernierPaiementByMonth = []
+        delayEcheanceByMonth = []
+        labelByYear = []
+        for year in range((Constants.clnDateMinimalDate).year,(Constants.clnDateMaximalDate).year+1):
+            for month in range(1,13):
+                # mean over the dernierpaiement column : only on the paid bills
+                test = (csvinputPaid.datePiece.dt.month==month) & (csvinputPaid.datePiece.dt.year==year)
+                csvtemp = csvinputPaid.loc[test]
+                if len(csvtemp)>0:
+                    delayDernierPaiementByYear.append(np.mean((csvtemp.dateDernierPaiement-csvtemp.datePiece).astype('timedelta64[D]').values))
+                else:
+                    delayDernierPaiementByYear.append(0)
+                # mean over the echeance column : on all bills
+                test = (csvinput.datePiece.dt.month==month) & (csvinputPaid.datePiece.dt.year==year)
+                csvtemp = csvinput.loc[test]
+                if len(csvtemp)>0:
+                    delayEcheanceByYear.append(np.mean((csvtemp.dateEcheance-csvtemp.datePiece).astype('timedelta64[D]').values))
+                else:
+                    delayEcheanceByYear.append(0)
+                labelByYear.append(str(month)+"-"+str(year)[2:])
+        for month in range(1,13):
+                # mean over the dernierpaiement column : only on the paid bills
+            test = csvinputPaid.datePiece.dt.month==month
+            csvtemp = csvinputPaid.loc[test]
+            if len(csvtemp)>0:
+                delayDernierPaiementByMonth.append(((csvtemp.dateDernierPaiement-csvtemp.datePiece).astype('timedelta64[D]')).mean())
+            else:
+                delayDernierPaiementByMonth.append(0)
+                # mean over the echeance column : on all bills
+            test = csvinput.datePiece.dt.month==month
+            csvtemp = csvinput.loc[test]
+            if len(csvtemp)>0:
+                delayEcheanceByMonth.append(((csvtemp.dateEcheance-csvtemp.datePiece).astype('timedelta64[D]')).mean())
+            else:
+                delayEcheanceByMonth.append(0)
         labelByMonth = Constants.labelByMonth
         # DRAWING
         # III - distribution of entries over the years and over the months
@@ -735,11 +642,11 @@ def analyzingDates(csvinput, toSaveGraph = False, toDrawGraphOld = False):
         DrawingTools.createHistogram(x=labelByMonth, y1=numberByMonth,ylabel="Nombre de factures",
                                      name="Distribution des factures par mois",filename="03b_DateFacturesMois")
         # IV - distribution of ratio of paid and ontimepaid over the years and the months
-        DrawingTools.createHistogram(x=labelByYear,y1=numberPaidByYear,y2=numberOnTimePaidByYear,ylabel="Pourcentage de factures",
-                                     name1="Pourcentage de factures payées",name2="Pourcentage de factures payées à temps",
+        DrawingTools.createHistogram(x=labelByYear,y1=numberPaidByYear,ylabel="Pourcentage de factures",
+                                     name1="Pourcentage de factures payées",
                                      name="Ratio des factures payées par année",filename="04_RatioFacturesPayeesAnnees")
-        DrawingTools.createHistogram(x=labelByMonth,y1=numberPaidByMonth,y2=numberOnTimePaidByMonth,ylabel="Pourcentage de factures",
-                                     name1="Pourcentage de factures payées",name2="Pourcentage de factures payées à temps",
+        DrawingTools.createHistogram(x=labelByMonth,y1=numberPaidByMonth,ylabel="Pourcentage de factures",
+                                     name1="Pourcentage de factures payées",
                                      name="Ratio des factures payées par mois",filename="04b_RatioFacturesPayeesMois")
         # V - distribution of delays
         DrawingTools.createHistogram(x=labelByYear,y1=delayEcheanceByYear,y2=delayDernierPaiementByYear,ylabel="Jours de délais",
@@ -748,221 +655,8 @@ def analyzingDates(csvinput, toSaveGraph = False, toDrawGraphOld = False):
         DrawingTools.createHistogram(x=labelByMonth,y1=delayEcheanceByMonth,y2=delayDernierPaiementByMonth,ylabel="Jours de délais",
                                      name1="Durée de l'échéance",name2="Durée du temps de paiement",
                                      name="Durées des délais d'échéance et de paiement",filename="05b_DelayFacturesMois")
-       
-    if toDrawGraphOld:
-        # initializing graph
-        plt.figure(Constants.figureId, figsize = Constants.figsize)
-        Constants.figureId += 1
-        plt.suptitle("Dates Analysis", fontsize=16)
-        Constants.graphId = 1
-        
-        #####################################
-        # Drawing the delays over the years #
-        #####################################
-        # the following array are separated in time step depending on the constant file
-        nbStepGraph = Utils.nbMonthsBetweenDates(maxDatePaid[0], minDatePaid[0])/Constants.anaDateStepMonthGraph+1
-        #     arrays storing the delays
-        if Constants.banaDateLargeAnalysis:
-            delayByYear = [[] for i in range(nbStepGraph)]
-            echeanceByYear = [[] for i in range(nbStepGraph)]
-            # arrays storing advanced statistics
-            meanDelayByYear = [0]*nbStepGraph
-            varDelayByYear = [0]*nbStepGraph
-#             medianDelayByYear = [0]*nbStepGraph
-            meanEcheanceByYear = [0]*nbStepGraph
-            varEcheanceByYear = [0]*nbStepGraph
-#             medianEcheanceByYear = [0]*nbStepGraph
-        else:
-            delayByYear = [0]*nbStepGraph
-            echeanceByYear = [0]*nbStepGraph
-        #     array storing the total number of paid bills
-        nbEntriesByYear = [0]*nbStepGraph
-        #     array for the x-labels of the graph
-        labelByYear = [0]*nbStepGraph
-        for c in columnDatePaid:
-            i = (int)(Utils.nbMonthsBetweenDates(c[0], minDatePaid[0])/Constants.anaDateStepMonthGraph)
-            if Constants.banaDateLargeAnalysis:
-                delayByYear[i].append((c[2]-c[0]).days)
-                echeanceByYear[i].append((c[1]-c[0]).days)
-            else:
-                delayByYear[i] += (c[2]-c[0]).days
-                echeanceByYear[i] += (c[1]-c[0]).days
-            nbEntriesByYear[i] +=1
-        somme = np.sum(nbEntriesByYear)
-        # computing statistics
-        for i in range(nbStepGraph):
-            labelByYear[i] = str((minDatePaid[0] + i*datetime.timedelta(days = Constants.anaDateStepMonthGraph*30.45)).year)
-            if nbEntriesByYear[i]>0:
-                if Constants.banaDateLargeAnalysis:                
-                    meanDelayByYear[i] = np.mean(delayByYear[i])
-                    varDelayByYear[i] = np.std(delayByYear[i])
-#                     medianDelayByYear[i] = np.median(delayByYear[i])
-                    meanEcheanceByYear[i] = np.mean(echeanceByYear[i])
-                    varEcheanceByYear[i] = np.std(echeanceByYear[i])
-#                     medianEcheanceByYear[i] = np.median(echeanceByYear[i])
-                else:
-                    delayByYear[i] = 1.0*delayByYear[i]/nbEntriesByYear[i]
-                    echeanceByYear[i] = 1.0*echeanceByYear[i]/nbEntriesByYear[i]
-                    nbEntriesByYear[i] = 100.0*nbEntriesByYear[i]/somme
-        # printing graph => two bars for delay and echeance by year
-        ax1 = plt.subplot(Constants.subplotShapeDates+Constants.graphId)
-        Constants.graphId += 1
-        if Constants.banaDateLargeAnalysis:
-            ax1.bar(range(nbStepGraph),meanDelayByYear, Constants.barSpace, color=Constants.colorBlue, yerr = varDelayByYear)
-            ax1.bar(np.arange(nbStepGraph)+Constants.barSpace,meanEcheanceByYear, Constants.barSpace, color=Constants.colorGreen, yerr = varEcheanceByYear)
-        else:
-            ax1.bar(range(nbStepGraph),delayByYear, Constants.barSpace,color=Constants.colorBlue)
-            ax1.bar(np.arange(nbStepGraph)+Constants.barSpace,echeanceByYear, Constants.barSpace,color=Constants.colorGreen)       
-        ax1.set_ylabel('Mean delay (days)', color = Constants.colorBlue, fontsize=10)
-        for tl in ax1.get_yticklabels():
-            tl.set_color(Constants.colorBlue)
-        ax1.legend(handles = [mpatches.Patch(color=Constants.colorBlue, label='Delay before last payment'),mpatches.Patch(color=Constants.colorGreen, label='Delay before Echeance')], fontsize = 10)
-        ax1.axhline(y= 60, xmin=0, xmax=nbStepGraph,color='k',alpha = 0.5,linestyle = '--', label = "60 days")
-        plt.xticks(np.arange(nbStepGraph)+Constants.barSpace,labelByYear,rotation=70)
-        plt.title("Delays before last payment and echeance over the years for paid bills", fontsize = 12)
-        
-        ######################################
-        # Drawing the delays over the months #
-        ######################################     
-        # the following array are separated in time step depending on the constant file
-        #     arrays storing the delay
-        if Constants.banaDateLargeAnalysis:
-            delayByMonth = [[] for i in range(12)]
-            echeanceByMonth = [[] for i in range(12)]
-            meanDelayByMonth = [0] * 12
-            varDelayByMonth = [0] * 12
-            meanEcheanceByMonth = [0] * 12
-            varEcheanceByMonth = [0] * 12
-        else:
-            delayByMonth = [0] * 12
-            echeanceByMonth = [0] * 12
-        #     array storing the total number of paid bills
-        nbEntriesByMonth = [0] * 12
-        #     array for the x-labels of the graph
-        labelByMonth = Constants.labelByMonth
-        for c in columnDatePaid:
-            i = c[0].month-1
-            if Constants.banaDateLargeAnalysis:
-                delayByMonth[i].append((c[2]-c[0]).days)
-                echeanceByMonth[i].append((c[1]-c[0]).days) 
-            else:
-                delayByMonth[i] += (c[2]-c[0]).days
-                echeanceByMonth[i] += (c[1]-c[0]).days                 
-            nbEntriesByMonth[i] += 1
-        somme = np.sum(nbEntriesByMonth)
-        for i in range(12):
-            if nbEntriesByMonth[i]>0:
-                if Constants.banaDateLargeAnalysis:
-                    meanDelayByMonth[i] = np.mean(delayByMonth[i])
-                    varDelayByMonth[i] = np.std(delayByMonth[i])
-                    meanEcheanceByMonth[i] = np.mean(echeanceByMonth[i])
-                    varEcheanceByMonth[i] = np.std(echeanceByMonth[i])
-                else:
-                    delayByMonth[i] = 1.0*delayByMonth[i]/nbEntriesByMonth[i]
-                    echeanceByMonth[i] = 1.0*echeanceByMonth[i]/nbEntriesByMonth[i]
-                    nbEntriesByMonth[i] = 100.0*(nbEntriesByMonth[i])/somme
-        
-        # printing graph
-        ax1 = plt.subplot(Constants.subplotShapeDates+Constants.graphId)
-        Constants.graphId += 1
-        if Constants.banaDateLargeAnalysis:
-            ax1.bar(range(12),meanDelayByMonth, Constants.barSpace,color = Constants.colorBlue, yerr = varDelayByMonth)
-            ax1.bar(np.arange(12)+Constants.barSpace,meanEcheanceByMonth, Constants.barSpace,color = Constants.colorGreen, yerr = varEcheanceByMonth)
-        else:
-            ax1.bar(range(12),delayByMonth, Constants.barSpace,color = Constants.colorBlue)
-            ax1.bar(np.arange(12)+Constants.barSpace,echeanceByMonth, Constants.barSpace,color = Constants.colorGreen)
-        ax1.set_ylabel('Mean delay (days)', color=Constants.colorBlue, fontsize=10)
-        for tl in ax1.get_yticklabels():
-            tl.set_color(Constants.colorBlue)
-        plt.xticks(np.arange(12)+Constants.barSpace,labelByMonth,rotation=70)
-        ax1.legend(handles = [mpatches.Patch(color=Constants.colorBlue, label='Delay before last payment'),mpatches.Patch(color=Constants.colorGreen, label='Delay before Echeance')], fontsize = 10)
-        plt.title("Delays before last payment and echeance over the months for paid bills", fontsize=12)
-        
-        #####################################
-        # Drawing the ratios over the years #
-        #####################################
-        
-        # the following array are separated in time step depending on the constant file
-        nbStepGraph = (int)(Utils.nbMonthsBetweenDates(maxDate[0], minDate[0])/Constants.anaDateStepMonthGraph)+1
-        #     array storing the total number of unpaid bills
-        nbEntriesByYear = [0]*nbStepGraph
-        nbOntimePaidByYear = [0]*nbStepGraph
-        nbPaidByYear = [0]*nbStepGraph
-        for c in column:
-            # computing the period of interest
-            i = (int)(Utils.nbMonthsBetweenDates(c[0], minDate[0])/Constants.anaDateStepMonthGraph)
-            nbEntriesByYear[i] +=1
-        for c in columnDatePaid:
-            # computing the period of interest
-            i = (int)(Utils.nbMonthsBetweenDates(c[0], minDate[0])/Constants.anaDateStepMonthGraph)
-            nbPaidByYear[i] += 1
-            if c[2]<=c[1]:
-                nbOntimePaidByYear[i] += 1
-        somme = np.sum(nbEntriesByYear)
-        for i in range(nbStepGraph):
-            if nbEntriesByYear[i]>0:
-                nbPaidByYear[i] = 100.0*nbPaidByYear[i]/nbEntriesByYear[i]
-                nbOntimePaidByYear[i] = 100.0*nbOntimePaidByYear[i]/nbEntriesByYear[i]
-                nbEntriesByYear[i] = 100.0*nbEntriesByYear[i]/somme
-        # printing graph
-        ax1 = plt.subplot(Constants.subplotShapeDates+Constants.graphId)
-        Constants.graphId += 1
-        plt.bar(range(nbStepGraph),nbEntriesByYear,Constants.barSpace, color = Constants.colorOrange)
-        plt.bar(np.arange(nbStepGraph)+Constants.barSpace,nbPaidByYear,Constants.barSpace, color = Constants.colorGreen)
-        plt.bar(np.arange(nbStepGraph)+Constants.barSpace,nbOntimePaidByYear,Constants.barSpace, color = Constants.colorBlue)
-        plt.ylabel('proportion (%)', color=Constants.colorBlue, fontsize=10)
-        for tl in ax1.get_yticklabels():
-            tl.set_color(Constants.colorBlue)
-        plt.xticks(np.arange(nbStepGraph)+Constants.barSpace,labelByYear,rotation=70)
-        ax1.legend(handles = [mpatches.Patch(color=Constants.colorOrange, label='Global proportion'),
-                              mpatches.Patch(color=Constants.colorGreen, label='Proportion of on-time paid bills'),
-                              mpatches.Patch(color=Constants.colorBlue, label='Proportion of paid bills')], 
-                   fontsize = 10)
-        plt.title("Analysis of the proportions of on-time paid and paid bills over the years", fontsize=12)
-        
-        ######################################
-        # Drawing the ratios over the months #
-        ######################################
-        
-        # the following array are separated in time step depending on the constant file
-        nbStepGraph = 12
-        #     array storing the total number of unpaid bills
-        nbEntriesByMonth = [0]*nbStepGraph
-        nbOntimePaidByMonth = [0]*nbStepGraph
-        nbPaidByMonth = [0]*nbStepGraph
-        for c in column:
-            # computing the period of interest
-            i = int(c[0][5:7])-1
-            nbEntriesByMonth[i] +=1
-        for c in columnDatePaid:
-            # computing the period of interest
-            i = c[0].month-1
-            nbPaidByMonth[i] += 1
-            if c[2]<=c[1]:
-                nbOntimePaidByMonth[i] += 1
-        somme = np.sum(nbEntriesByMonth)
-        for i in range(nbStepGraph):
-            if nbEntriesByMonth[i]>0:
-                nbPaidByMonth[i] = 100.0*nbPaidByMonth[i]/nbEntriesByMonth[i]
-                nbOntimePaidByMonth[i] = 100.0*nbOntimePaidByMonth[i]/nbEntriesByMonth[i]
-                nbEntriesByMonth[i] = 100.0*nbEntriesByMonth[i]/somme
-        # printing graph
-        ax1 = plt.subplot(Constants.subplotShapeDates+Constants.graphId)
-        Constants.graphId += 1
-        plt.bar(range(nbStepGraph),nbEntriesByMonth,Constants.barSpace, color = Constants.colorOrange)
-        plt.bar(np.arange(nbStepGraph)+Constants.barSpace,nbPaidByMonth,Constants.barSpace, color = Constants.colorGreen)
-        plt.bar(np.arange(nbStepGraph)+Constants.barSpace,nbOntimePaidByMonth,Constants.barSpace, color = Constants.colorBlue)
-        plt.ylabel('proportion (%)', color=Constants.colorBlue, fontsize=10)
-        for tl in ax1.get_yticklabels():
-            tl.set_color(Constants.colorBlue)
-        plt.xticks(np.arange(nbStepGraph)+Constants.barSpace,labelByMonth,rotation=70)
-        ax1.legend(handles = [mpatches.Patch(color=Constants.colorOrange, label='Global proportion'),
-                              mpatches.Patch(color=Constants.colorGreen, label='Proportion of on-time paid bills'),
-                              mpatches.Patch(color=Constants.colorBlue, label='Proportion of paid bills')], 
-                   fontsize = 10)
-        plt.title("Analysis of the proportions of on-time paid and paid bills over the months", fontsize=12)
-                        
-def analyzingMontant(csvinput, toSaveGraph = False, toDrawGraphOld = False):
+                              
+def analyzingMontant(csvinput, toSaveGraph = False):
     '''
     function that analyses the content of the column 'montantPieceEur'
     and displays information about it
@@ -974,41 +668,32 @@ def analyzingMontant(csvinput, toSaveGraph = False, toDrawGraphOld = False):
     '''
     print "=== Starting Analysis of montantPieceEur column ==="
     print ""
-    
-    
     if csvinput is None:
         print "no result to analyse"
         print ""
         return
-    
     if not('montantPieceEur' in csvinput.columns):
         print "wrong columns"
         print ""
         return
-    
-    # importing column
-    column = csvinput['montantPieceEur'].values
-     
-    if len(column) ==0 :
+    if len(csvinput) ==0 :
         print "no result to analyse"
         print ""
         return
-    
+
     # displaying basic informations
-    print "minimal bill value :", np.min(column)
-    print "maximal bill value :", np.max(column)
-    print "mean bill value :",np.mean(column)
-    print "median bill value :",np.median(column)
+    print "minimal bill value :", csvinput.montantPieceEur.min()
+    print "maximal bill value :", csvinput.montantPieceEur.max()
+    print "mean bill value :", csvinput.montantPieceEur.mean()
+    print "median bill value :", csvinput.montantPieceEur.median()
     
     # about the log-repartition of ids
-    repartitionMontantArray = [0]*(int)(math.log10(max(column))*Constants.anaIdLogCoefficientMontants+1)
-    for e in column:
-        if e>0:
-            repartitionMontantArray[(int)(math.log10((int)(e))*Constants.anaIdLogCoefficientMontants)] += 1
+    idLog10 = lambda x : (int)(1.0*math.log10(1.0*x)*Constants.anaIdLogCoefficientMontants) if x>0 else 0
+    serie = csvinput.montantPieceEur.apply(idLog10).value_counts(normalize=True,sort=False,ascending=False)
+    xlabel = [str(10**(a/Constants.anaIdLogCoefficientMontants)) if a%Constants.anaIdLogCoefficientMontants==0 else "" for a in serie.index]
+    repartitionMontantArray = serie.values
     print "repartition of the montants according to their log-10:"
     print repartitionMontantArray
-    print ""
-    print "negative values :", len(column)-np.sum(repartitionMontantArray)
     print ""
     
     # creating and saving graph
@@ -1017,35 +702,11 @@ def analyzingMontant(csvinput, toSaveGraph = False, toDrawGraphOld = False):
         # computing length of the array
         nbStepGraph = len(repartitionMontantArray)
         # computing labels
-        xlabel = ["e^"+str(1.0*i/Constants.anaIdLogCoefficientMontants) for i in range(nbStepGraph)]
+#         xlabel = ["e^"+str(1.0*i/Constants.anaIdLogCoefficientMontants) for i in range(nbStepGraph)]
         # DRAWING
         DrawingTools.createHistogram(x=xlabel, y1=repartitionMontantArray, 
                                      xlabel="Valeur des factures (euros)", ylabel="Nombre de factures", 
                                      name="Distribution des montants des factures", filename="06_Montants")
-    # dealing with the old graph displaying
-    if toDrawGraphOld:
-        # initializing graph displaying
-        plt.figure(Constants.figureId, figsize = Constants.figsize)
-        Constants.figureId += 1
-        plt.suptitle("Bills values 'montantPieceEur' Analysis", fontsize=16)
-        Constants.graphId = 1
-         
-        ###########################################
-        # Drawing the repartition of bills values #
-        ###########################################
-        # pre-processing
-        nbStepGraph = len(repartitionMontantArray)
-        labelArray = [0] * nbStepGraph
-        for i in range(nbStepGraph):
-            labelArray[i] = '%.1e' % 10**(1.0*i/Constants.anaIdLogCoefficientMontants) if i%Constants.anaIdLogCoefficientMontants==0 else ""
-        # displaying
-        plt.subplot(Constants.subplotShapeMontants+Constants.graphId)
-        Constants.graphId += 1
-        plt.bar(range(nbStepGraph),repartitionMontantArray,color=Constants.colorBlue)
-        plt.title("repartition of the bills values", fontsize=12)
-        plt.xticks(range(nbStepGraph),labelArray, rotation = 70)
-        plt.xlabel("value of bills", fontsize=10)
-        plt.ylabel("number of entries", fontsize=10)
 
 def analyzingOthers(csvinput):  
     '''
@@ -1972,14 +1633,17 @@ def importAndAnalyseCsv(toPrint = False, toDrawGraph = True, ftp = False):
     startTime = time.time()
     # importing the csv file and creating the datframe
     if(ftp):
-        csvinput = importFTPCsv(addPaidBill=True)
+        csvinput = importFTPCsv(addPaidBill=True,dtype=Constants.dtype)
     else:
-        csvinput = importCsv(addPaidBill=True)
-        
+        csvinput = importCsv(addPaidBill=True,dtype=Constants.dtype) 
+    # prepricessing of the dates
+    csvinput['datePiece'] = pd.to_datetime(csvinput['datePiece'], format='%Y-%m-%d', errors='coerce') 
+    csvinput['dateEcheance'] = pd.to_datetime(csvinput['dateEcheance'], format='%Y-%m-%d', errors='coerce') 
+    csvinput['dateDernierPaiement'] = pd.to_datetime(csvinput['dateDernierPaiement'], format='%Y-%m-%d', errors='coerce')   
     # preprocess the dataframe
-    csvinput = cleaningDates(csvinput, toPrint)
-    csvinput = cleaningMontant(csvinput, toPrint)
-    csvinput = cleaningEntrepId(csvinput, toPrint)
+    csvinput = cleaningDates(csvinput)
+    csvinput = cleaningMontant(csvinput)
+    csvinput = cleaningEntrepId(csvinput)
     if toDrawGraph:
         prepareInput()
     # analysing the dateframe
@@ -1987,7 +1651,7 @@ def importAndAnalyseCsv(toPrint = False, toDrawGraph = True, ftp = False):
     analyzingEntrepId(csvinput, toSaveGraph=toDrawGraph)
     analyzingMontant(csvinput, toSaveGraph=toDrawGraph)
 #     analyzingOthers(csvinput)
-    analyzingComplete(csvinput, toSaveGraph=toDrawGraph)
+#     analyzingComplete(csvinput, toSaveGraph=toDrawGraph)
     # ploting the graphs
     plt.show()
     Utils.printTime(startTime)
