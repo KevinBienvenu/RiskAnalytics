@@ -6,11 +6,18 @@ Created on 13 mai 2016
 '''
 
 import EntrepriseLearning
+from preprocess import CameliaBalAGPreprocess
+
+csvinput = CameliaBalAGPreprocess.importAndCleanCsv(False, ftp=True, toSave=False)
+
+csvinput.sample(n=100000).to_csv("cameliaBalAGrandom.csv")
+
+# EntrepriseLearning.preprocessData(True)
     
-(X,Y) = EntrepriseLearning.importPreprocessData()
-
-
-EntrepriseLearning.learning(X, Y)
+# (X,Y) = EntrepriseLearning.importPreprocessData()
+# 
+# 
+# EntrepriseLearning.learning(X, Y)
 
 
 # with open("preprocessedDataBalAGclean.csv","r") as fichier:

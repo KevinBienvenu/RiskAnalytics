@@ -39,7 +39,7 @@ def preprocessData(toExportCsv = False):
     '''
    
     # importing the BalAG file
-    csvinput = CameliaBalAGPreprocess.importAndCleanCsv(toPrint=False, ftp=True, toSave=False)
+    csvinput = CameliaBalAGPreprocess.importAndCleanCsv(toPrint=False, ftp=False, toSave=False)
     del csvinput['montantLitige']
     del csvinput['devise']
     del csvinput['dateInsert']
@@ -73,7 +73,7 @@ def preprocessData(toExportCsv = False):
     
     if toExportCsv:
 #         csvinput.to_csv("preprocessedDataBalAG.csv", sep="\t", encoding="utf-8")
-        with open("preprocessedDataBalAGclean.csv","w") as csvfile:
+        with open("preprocessedDataBalAGsample.csv","w") as csvfile:
             writer = csv.writer(csvfile, delimiter='\t')
             compt = Utils.initProgress(csvinput, 1)
             for line in csvinput.itertuples():
