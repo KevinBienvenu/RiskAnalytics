@@ -37,9 +37,12 @@ def preprocessData(toExportCsv = False):
     X : vector of features
     Y : vector of observations
     '''
-   
+    print "=!= Preprocessing Data =!="
+    print ""
     # importing the BalAG file
     csvinput = CameliaBalAGPreprocess.importAndCleanCsv(toPrint=False, ftp=False, toSave=False)
+    print "size :",len(csvinput)
+    print ""
     del csvinput['montantLitige']
     del csvinput['devise']
     del csvinput['dateInsert']

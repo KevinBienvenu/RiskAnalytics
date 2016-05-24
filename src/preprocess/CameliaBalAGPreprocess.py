@@ -61,7 +61,7 @@ from Constants import bclnIdIntFormat, bclnIdMinimalBillsNumber, \
     clnMontMinimalValue, bclnMontMaximalValue, clnMontMaximalValue, \
     bclnMontantLitigeNonZero
 
-def importCsv(filename = 'cameliaBalAG_extraitRandom.csv',sep='\t',usecols = None,dtype=None,addPaidBill = False):
+def importCsv(filename = 'cameliaBalAGrandom.csv',sep='\t',usecols = None,dtype=None,addPaidBill = False):
     '''
     function that imports the content of the csv file. 
     The csv file must be stored stored locally.
@@ -84,7 +84,7 @@ def importCsv(filename = 'cameliaBalAG_extraitRandom.csv',sep='\t',usecols = Non
         return None
     # adding a column to the dataframe with a boolean telling if the bill was paid
     if(addPaidBill):
-        if(not 'dateDernierPaiement' in csvinput.columns):
+        if(not 'dateDernierPaiement' in csvinput.columns.values):
             print "problem : impossible extraction of paidBill column"
         else:
             paidBill = []
@@ -385,8 +385,6 @@ def cleaningDates(csvinput):
     totalIni = len(csvinput)
     csvinput.dropna(axis=0,how='all',inplace=True)
     totalFin = len(csvinput)
-    
-    print csvinput.loc[csvinput.dateEcheance<Constants.clnDateMinimalDate]
     
     print "   ",str(totalIni-totalFin),"removed rows -",str(100.0*(totalIni-totalFin)/totalIni),"%\n"  
     
