@@ -138,8 +138,8 @@ def learning(csvX, csvY):
     
     # list of models
     models = []
-#     models.append(linear_model.LinearRegression())
-    models.append(svm.SVC())
+    models.append(linear_model.LinearRegression())
+#     models.append(svm.SVC())
 #     models.append(linear_model.Lasso(alpha = 0.1,max_iter=100000))
 #     models.append(kernel_ridge.KernelRidge(alpha = 10))
 #     models.append(naive_bayes.GaussianNB())
