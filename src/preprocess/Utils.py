@@ -198,6 +198,8 @@ def initProgress(completefile, p = 10):
     '''
     i = 0
     total = len(completefile)
+    if total<100/p:
+        p = 100/total
     compt = (i,p,total,p)   
     return compt   
 

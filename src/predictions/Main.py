@@ -5,19 +5,17 @@ Created on 13 mai 2016
 @author: Kévin Bienvenu
 '''
 
-import EntrepriseLearning
-from preprocess import CameliaBalAGPreprocess
+from EntrepriseLearning import analyzeposThresAndSizeSample
+
 
 # csvinput = CameliaBalAGPreprocess.importAndCleanCsv(False, ftp=True, toSave=False)
 # 
 # csvinput.sample(n=100000).to_csv("cameliaBalAGrandom.csv")
 
-EntrepriseLearning.preprocessData(True)
+# EntrepriseLearning.preprocessData(True)
+
     
-# (X,Y) = EntrepriseLearning.importPreprocessData()
-# 
-# 
-# EntrepriseLearning.learning(X, Y)
+analyzeposThresAndSizeSample()
 
 
 # with open("preprocessedDataBalAGclean.csv","r") as fichier:

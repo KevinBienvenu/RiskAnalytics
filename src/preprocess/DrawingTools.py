@@ -26,6 +26,7 @@ import Utils
 import plotly.graph_objs as go
 import plotly.plotly as py
 import numpy as np
+from mpmath import norm
 
 ''' drawing and saving functions '''
 
@@ -328,6 +329,11 @@ def createHistogram2D(y0,
                       y1,
                       xlabel="",
                       ylabel="",
+                      xbins = None,
+                      ybins = None,
+                      zmin = 0,
+                      zmax = 0,
+                      histnorm = "percent",
                       name="Graphe Sans Titre",
                       filename="untitledPlot"):
     '''
@@ -348,10 +354,28 @@ def createHistogram2D(y0,
         print "error : y0 and y1 have different sizes"
         return
     py.plotly.sign_in('KevinBienvenu','r8vjr5qj9n')
-    trace0 = go.Histogram2d(x=y0, y=y1,  # @UndefinedVariable
-                            histnorm='percent',
-                            colorscale=[[0, 'rgb(12,51,131)'], [0.25, 'rgb(10,136,186)'], [0.5, 'rgb(242,211,56)'], [0.75, 'rgb(242,143,56)'], [1, 'rgb(217,30,30)']]
-                            )
+    if zmin==zmax:
+        trace0 = go.Histogram2d(x=y0, y=y1,  # @UndefinedVariable
+                                autobinx=xbins is None,
+                                xbins=xbins,
+                                autobiny=xbins is None,
+                                ybins=ybins,
+                                histnorm=histnorm,
+                                colorscale=[[0, 'rgb(12,51,131)'], [0.25, 'rgb(10,136,186)'], [0.5, 'rgb(242,211,56)'], [0.75, 'rgb(242,143,56)'], [1, 'rgb(217,30,30)']]
+                                )
+    else:
+        trace0 = go.Histogram2d(x=y0, y=y1,  # @UndefinedVariable
+                                autobinx=xbins is None,
+                                xbins=xbins,
+                                autobiny=xbins is None,
+                                ybins=ybins,
+                                histnorm=histnorm,
+                                zmin=zmin,
+                                zmax=zmax,
+                                zauto=False,
+                                colorscale=[[0, 'rgb(12,51,131)'], [0.25, 'rgb(10,136,186)'], [0.5, 'rgb(242,211,56)'], [0.75, 'rgb(242,143,56)'], [1, 'rgb(217,30,30)']]
+                                )
+        
     data = [trace0]
     layout = go.Layout(title=name,  # @UndefinedVariable
                        xaxis=dict(title = xlabel,
@@ -409,7 +433,47 @@ def drawLargeHistogram2D(filename):
                 y1bis.append(label1[j])
     createHistogram2D(y0=y0bis, y1=y1bis, xlabel=xlabel, ylabel=ylabel, name=name, filename=filename)
     
+def createHistogram2DFromArray(array,
+                               xbins = None,
+                               ybins = None,
+                               norm=False,
+                               xlabel="",
+                               ylabel="",
+                               zmin=0,
+                               zmax=0,
+                               name="Graphe Sans Titre",
+                               filename="untitledPlot"): 
+    '''
+    TODO: doc à rédiger plus tard
+    ''' 
+    print "drawing :",name
+    if norm:
+        norm = array.sum()
+        array = 1000.0*array/norm+0.5
+    array = array.astype(np.int16)
+    y0 = []
+    y1 = []
+    if xbins is None:
+        xscale = range(len(array)) 
+    else:
+        xscale = np.arange(xbins['start'],xbins['end']+xbins['size'],xbins['size'])
+    if ybins is None:
+        yscale = range(len(array[0])) 
+    else:
+        yscale = np.arange(ybins['start'],ybins['end']+ybins['size'],ybins['size'])
     
+    shape = array.shape
+    for i in range(1,shape[0]):
+        for j in range(1,shape[1]):
+            y0 += [xscale[i]] * array[i][j]
+            y1 += [yscale[j]] * array[i][j]
+    createHistogram2D(y0 = y0, y1 = y1, 
+                      xlabel = xlabel, ylabel = ylabel, 
+                      xbins = xbins, ybins = ybins,
+                      zmin=zmin,zmax=zmax, 
+                      histnorm="",
+                      name = name,
+                      filename = filename)
     
     
     
